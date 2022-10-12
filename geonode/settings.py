@@ -522,6 +522,7 @@ INSTALLED_APPS = (
 
     # GeoNode
     'geonode',
+    'geokincia',
 )
 
 markdown_white_listed_tags = [
@@ -2225,3 +2226,13 @@ SUPPORTED_DATASET_FILE_TYPES = [
         "needsFiles": ["shp", "prj", "dbf", "shx", "csv", "tiff", "zip", "xml"]
     }
 ]
+
+GEOKINCIA = {
+    'WORKING_DIR':'/mnt/volumes/statics/gdrive',
+    'ATTACHMENT_DIR': STATIC_ROOT + '/attachment',
+    'STORAGE': {
+        'GOOGLE_DRIVE': {
+            'CLASS_NAME': 'geokincia.storage.gdrive.GDriveStorage'
+        }        
+    }
+}

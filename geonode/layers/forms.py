@@ -20,6 +20,8 @@ import os
 import zipfile
 
 from django import forms
+from django.contrib.auth import get_user_model
+from django.utils.translation import ugettext_lazy as _
 
 from geonode import geoserver
 from geonode.utils import check_ogc_backend
@@ -27,7 +29,7 @@ from geonode.utils import check_ogc_backend
 import json
 from geonode.utils import unzip_file, mkdtemp
 from geonode.base.forms import ResourceBaseForm, get_tree_data
-from geonode.layers.models import Dataset, Attribute
+from geonode.layers.models import Dataset, Attribute, UserCollectorStorage
 
 
 class JSONField(forms.CharField):
@@ -72,6 +74,7 @@ class DatasetForm(ResourceBaseForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['regions'].choices = get_tree_data()
+        self.fields['intermediate_source_storage'].disabled = True
         for field in self.fields:
             help_text = self.fields[field].help_text
             self.fields[field].help_text = None
@@ -86,6 +89,12 @@ class DatasetForm(ResourceBaseForm):
                         'data-html': 'true'
                     }
                 )
+    user_collector = forms.ModelMultipleChoiceField(
+        queryset = get_user_model().objects.filter(id__gt=-1),
+        widget = forms.CheckboxSelectMultiple
+    )
+    upload_this_dataset_as_source = forms.BooleanField(label=_('upload'), help_text=_('upload'), initial=False)
+
 
 
 class LayerUploadForm(forms.Form):

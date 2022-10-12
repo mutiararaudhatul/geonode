@@ -29,6 +29,7 @@ from owslib.wfs import WebFeatureService
 import xml.etree.ElementTree as ET
 
 from django.conf import settings
+from django.apps import AppConfig
 
 from django.db.models import F
 from django.http import Http404, JsonResponse
@@ -70,7 +71,7 @@ from geonode.layers.forms import (
     NewLayerUploadForm)
 from geonode.layers.models import (
     Dataset,
-    Attribute)
+    Attribute, UserCollectorStorage)
 from geonode.layers.utils import (
     is_sld_upload_only, is_xml_upload_only,
     validate_input_source)
@@ -762,6 +763,16 @@ def dataset_metadata(
                 }
             )
 
+        # data coleector
+        is_data_collector = dataset_form.cleaned_data.get('is_data_collector')
+        if is_data_collector:
+            users_collectors = dataset_form.cleaned_data.get('user_collector')
+            for user in users_collectors:
+                layer.user_collector.add(user)
+        else:
+            layer.user_collector.clear()
+            layer.use_aggregate_data = False
+            layer.auto_fill_attribute = False
         resource_manager.update(
             layer.uuid,
             instance=layer,
@@ -795,8 +806,11 @@ def dataset_metadata(
 
     metadata_author_groups = get_user_visible_groups(request.user)
 
+    # user collector upload folder
+    user_collector_folder = [ {'username': uc.user.username, 'url': uc.upload_url} for uc in UserCollectorStorage.objects.filter(dataset__id = layer.id) ]
     register_event(request, 'view_metadata', layer)
     return render(request, template, context={
+        "user_collector_folder": user_collector_folder,
         "resource": layer,
         "dataset": layer,
         "dataset_form": dataset_form,

@@ -34,3 +34,4 @@ class AppConfig(BaseAppConfig):
     def ready(self):
         super().ready()
         run_setup_hooks()
+        import geonode.layers.signals

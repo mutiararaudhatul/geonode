@@ -42,7 +42,7 @@ BBOX = [-180, -90, 180, 90]
 DATA_QUALITY_MESSAGE = "Created with GeoNode"
 
 
-def create_dataset(name, title, owner_name, geometry_type, attributes=None):
+def create_dataset(name, title, owner_name, geometry_type, attributes=None, is_collector_dataset=False, group=None):
     """
     Create an empty layer in GeoServer and register it in GeoNode.
     """
@@ -56,10 +56,10 @@ def create_dataset(name, title, owner_name, geometry_type, attributes=None):
     logger.debug('Creating the layer in GeoServer')
     workspace, datastore = create_gs_dataset(name, title, geometry_type, attributes)
     logger.debug('Creating the layer in GeoNode')
-    return create_gn_dataset(workspace, datastore, name, title, owner_name)
+    return create_gn_dataset(workspace, datastore, name, title, owner_name, is_collector_dataset, group)
 
 
-def create_gn_dataset(workspace, datastore, name, title, owner_name):
+def create_gn_dataset(workspace, datastore, name, title, owner_name, is_collector_dataset=False, group=None):
     """
     Associate a layer in GeoNode for a given layer in GeoServer.
     """
@@ -79,10 +79,13 @@ def create_gn_dataset(workspace, datastore, name, title, owner_name):
             srid='EPSG:4326',
             bbox_polygon=Polygon.from_bbox(BBOX),
             ll_bbox_polygon=Polygon.from_bbox(BBOX),
-            data_quality_statement=DATA_QUALITY_MESSAGE
+            data_quality_statement=DATA_QUALITY_MESSAGE,
+            is_collector_dataset=is_collector_dataset
         ))
 
     to_update = {}
+    if not group:
+        to_update['group_id'] = group
     if settings.ADMIN_MODERATE_UPLOADS:
         to_update['is_approved'] = to_update['was_approved'] = False
     if settings.RESOURCE_PUBLISHING:
@@ -125,6 +128,9 @@ def get_attributes(geometry_type, json_attrs=None):
     gattr.append(f'com.vividsolutions.jts.geom.{geometry_type}')
     gattr.append({'nillable': False})
     lattrs.append(gattr)
+    lattrs.append(['internal_id', f'java.lang.String', {'nillable': True}])
+    lattrs.append(['internal_attachments', f'java.lang.String', {'nillable': True}])
+    lattrs.append(['internal_misc', f'java.lang.String', {'nillable': True}])
     if json_attrs:
         jattrs = json.loads(json_attrs)
         for jattr in jattrs.items():

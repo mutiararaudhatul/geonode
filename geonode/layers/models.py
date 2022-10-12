@@ -16,6 +16,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 #########################################################################
+from distutils.command.upload import upload
 import re
 import logging
 
@@ -40,6 +41,8 @@ from geonode.security.permissions import (
 from geonode.base.models import (
     ResourceBase,
     ResourceBaseManager)
+
+from geokincia.tasks import prepare_dataset_task, delete_file_task
 
 logger = logging.getLogger("geonode.layers.models")
 
@@ -112,7 +115,6 @@ class DatasetManager(ResourceBaseManager):
     def __init__(self):
         models.Manager.__init__(self)
 
-
 class Dataset(ResourceBase):
 
     """
@@ -181,6 +183,25 @@ class Dataset(ResourceBase):
         blank=True,
         null=True)
 
+    # data collector
+    is_collector_dataset = models.BooleanField(default=False)
+    is_data_collector = models.BooleanField(_('use as data collector?'),
+        help_text=_('use data collector to populate this dataset'),
+        default=False)
+    use_aggregate_data = models.BooleanField(_('aggregate data from data collector'),
+        help_text='syncronize this dataset from its data collector dataset',
+        default=False)
+    auto_fill_attribute = models.BooleanField(_('auto fill'), 
+        help_text=_('copy attribute from previous'), default=False)
+    # auto_merge_for_multi = models.BooleanField(_('auto fill'), 
+    #    help_text=_('copy attribute from previous'), default=False)
+    intermediate_storage = models.CharField(_('intermediate storage'), max_length=255,
+        choices=[(s,s) for s in settings.GEOKINCIA['STORAGE'].keys()],
+        blank=True, null=True)
+    source_url = models.CharField(max_length=255, blank=True, null=True)
+    user_collector = models.ManyToManyField(settings.AUTH_USER_MODEL, through='UserCollectorStorage')
+    file_path = models.CharField(max_length=200)
+
     def is_vector(self):
         return self.subtype in ['vector', 'vector_time']
 
@@ -219,7 +240,7 @@ class Dataset(ResourceBase):
             _attrs = self.attribute_set
         else:
             _attrs = Attribute.objects.filter(dataset=self)
-        return _attrs.exclude(attribute='the_geom').order_by('display_order')
+        return _attrs.exclude(attribute='the_geom').exclude(attribute='internal_id').exclude(attribute='internal_misc').exclude(attribute='internal_attachments').order_by('display_order')
 
     @property
     def service_typename(self):
@@ -543,3 +564,13 @@ class Attribute(models.Model):
 
     def unique_values_as_list(self):
         return self.unique_values.split(',')
+
+class UserCollectorStorage(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    upload_url = models.CharField(max_length=2000, blank=True, null=True)
+    intermediate_dataset_name = models.CharField(max_length=1000, blank=True, null=True)
+    folder = models.CharField(max_length=200)
+
+    def __str__(self) -> str:
+        return self.user.username + ' | ' + self.upload_url

@@ -516,7 +516,76 @@ span.grippy::after {
                 {% endblock dataset_supplemental_information %}
             </div>
             <div class="col-xs-12 col-lg-5">
-                   {% block dataset_temporal_extent_start %}
+              {% block data_collector %}
+              {% if dataset_form.is_collector_dataset != True %}
+              <style>
+                .uc_select{
+                height: 200px;
+                overflow-y: scroll;
+                }
+                .uc_select ul{
+                list-style-type: none;
+                }
+              </style>
+              <script>
+                function copyUrl(id) {
+                  $(id).select();
+                  document.execCommand("copy");
+              }
+              </script>
+              <div class="panel panel-default" style="margin-top: 5px">
+                <div class="panel-heading">{% trans "Data Collector" %}</div>
+                  <div class="panel-body">
+                    <div style="margin-top: 5px">
+                      <span><label for="{{ dataset_form.is_data_collector|id }}">{{ dataset_form.is_data_collector.label }}</label></span>
+                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
+                      {{ dataset_form.is_data_collector }}
+                    </div>
+                    <div style="margin-top: 5px">
+                      <span><label for="{{ dataset_form.use_aggregate_data|id }}">{{ dataset_form.use_aggregate_data.label }}</label></span>
+                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
+                      {{ dataset_form.use_aggregate_data }}
+                    </div>
+                    <div style="margin-top: 5px">
+                      <span><label for="{{ dataset_form.auto_fill_attribute|id }}">{{ dataset_form.auto_fill_attribute.label }}</label></span>
+                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
+                      {{ dataset_form.auto_fill_attribute }}
+                    </div>
+                    <div style="margin-top: 5px">
+                      <span><label for="{{ dataset_form.user_collector|id }}">{{ dataset_form.user_collector.label }}</label></span>
+                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
+                      <div class="uc_select">
+                      {{ dataset_form.user_collector }}
+                      </div>
+                    </div>
+                    <div style="margin-top: 5px">
+                      <span><label for="{{ dataset_form.intermediate_storage|id }}">{{ dataset_form.intermediate_storage.label }}</label></span>
+                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
+                      {{ dataset_form.intermediate_storage }}
+                    </div>
+                    <div style="margin-top: 5px">
+                      <span><label for="{{ dataset_form.intermediate_source_storage|id }}">{{ dataset_form.source_url.label }}</label></span>
+                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
+                      {{ dataset_form.source_url }}
+                    </div>
+                    {% if user_collector_folder  %}
+                    <div style="margin-top: 5px">
+                      <span><label for="uc_upload_url_id">{% trans "Upload URL for user collector" %}</label></span>
+                      <ul>
+                        {% for uc_url in user_collector_folder %}
+                        <li><input type="text" id="uc_url_{{ uc_url.username }}" value="{{ uc_url.url }}"<span><button onclick="copyUrl('#uc_url_{{ uc_url.username }}')">copy</button></span></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+                {% endif %}
+                {% endblock data_collector %}
+              <div class="panel panel-default" style="margin-top: 5px">
+                <div class="panel-heading">{% trans "Optional" %}</div>
+                  <div class="panel-body">
+                    {% block dataset_temporal_extent_start %}
                     <div class="col-xs-12 col-lg-6 check-select">
                       <div class="input-group date">
                         <span><label for="{{ dataset_form.temporal_extent_start|id }}">{{ dataset_form.temporal_extent_start.label }}</label></span>
@@ -556,6 +625,8 @@ span.grippy::after {
                     </div>
                     {% endblock layer_extra_metadata %}
                 </div>
+                </div>
+              </div>
             </div>
             <div class="col-xs-12 col-lg-3">
               <div class="panel panel-default" style="margin-top: 5px">
