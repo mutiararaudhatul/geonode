@@ -573,7 +573,7 @@ span.grippy::after {
                       <span><label for="uc_upload_url_id">{% trans "Upload URL for user collector" %}</label></span>
                       <ul>
                         {% for uc_url in user_collector_folder %}
-                        <li><input type="text" id="uc_url_{{ uc_url.username }}" value="{{ uc_url.url }}"<span><button onclick="copyUrl('#uc_url_{{ uc_url.username }}')">copy</button></span></li>
+                        <li><span>uc_url.username<input type="text" id="uc_url_{{ uc_url.username }}" value="{{ uc_url.url }}"><button onclick="copyUrl('#uc_url_{{ uc_url.username }}')">copy</button></span></li>
                         {% endfor %}
                       </ul>
                     </div>
