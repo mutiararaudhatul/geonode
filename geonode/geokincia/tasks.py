@@ -68,7 +68,7 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
                 except:
                     pass
             source_file = utils.download_source_dataset(layer.workspace, layer.name)
-            logger.debug(f'')
+            logger.debug(f'source_file')
             source_url = storage.upload_file(os.path.basename(source_file))
             layer.source_url = source_url
             layer.file_path = os.path.join('source', os.path.basename(source_file))

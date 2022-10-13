@@ -772,9 +772,13 @@ def dataset_metadata(
             for user in users_collectors:
                 layer.user_collector.add(user)
         else:
+            if layer.source_url:
+                delete_file_task.delay(layer.intermediate_storage, layer.file_path)
             layer.user_collector.clear()
             layer.use_aggregate_data = False
             layer.auto_fill_attribute = False
+            layer.file_path = None
+            layer.source_url = None
         resource_manager.update(
             layer.uuid,
             instance=layer,
@@ -783,12 +787,8 @@ def dataset_metadata(
             extra_metadata=json.loads(dataset_form.cleaned_data['extra_metadata'])
         )
 
-        if request.method == 'POST':
-            if not layer.is_data_collector and layer.source_url:
-                delete_file_task.delay(layer.intermediate_storage, layer.file_path)
-            elif layer.is_data_collector:
-                prepare_dataset_task.delay(layer.id, dataset_form.cleaned_data.get('reupload_this_dataset_as_source'))
-            dataset_form.cleaned_data['reupload_this_dataset_as_source'] = False
+        if request.method == 'POST' and layer.is_data_collector:
+            prepare_dataset_task.delay(layer.id, dataset_form.cleaned_data.get('reupload_this_dataset_as_source'))
 
         return HttpResponse(json.dumps({'message': message}))
 
