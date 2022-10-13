@@ -20,10 +20,13 @@ class GDriveStorage(BaseStorage):
 
     def create_folder(self, folder_name):
         folder_name = 'upload/' + folder_name
-        self._execute_command('drive new -folder %s' % folder_name, cwd=settings.GEOKINCIA['WORKING_DIR'])
+        self._execute_command('drive new -folder %s' % folder_name, settings.GEOKINCIA['WORKING_DIR'])
         ext = self._execute_command('drive url %s' % folder_name, settings.GEOKINCIA['WORKING_DIR'])
         url = re.split(r'\s+', ext.stdout.decode('utf-8').strip())[1]
-        os.makedirs(os.path.join(settings.GEOKINCIA['WORKING_DIR'], folder_name))
+        try:
+            os.makedirs(os.path.join(settings.GEOKINCIA['WORKING_DIR'], folder_name))
+        except:
+            pass
         return url
 
     def upload_file(self, local_file):

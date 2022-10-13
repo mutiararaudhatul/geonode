@@ -769,6 +769,8 @@ def dataset_metadata(
         is_data_collector = dataset_form.cleaned_data.get('is_data_collector')
         if is_data_collector:
             users_collectors = dataset_form.cleaned_data.get('user_collector')
+            for user in layer.user_collector.exclude(id__in=users_collectors):
+                layer.user_collector.remove(user)
             for user in users_collectors:
                 layer.user_collector.add(user)
         else:

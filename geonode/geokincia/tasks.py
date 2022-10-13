@@ -8,14 +8,13 @@ from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.celery_app import app
-from celery.utils.log import get_task_logger
 from datetime import datetime
-
+import logging
 from . import utils
 
 import os
 
-logger = get_task_logger(__name__)
+logger = logging.getLogger(__name__)
 
 @app.task(
     bind=True,
@@ -84,14 +83,16 @@ Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, sourc
             send_mail(f'Project {layer.title}: Gagal Buat Source Dataset',
                     f'Gagal membuat  source dataset untuk project {layer.title}',None, admins)
     #upload
+    logger.debug(f'user_collectors {len(user_collectors)}')
     for user_collector in user_collectors:
+        logger.debug(f'user_collector {user_collector.user.username}')
         if not user_collector.upload_url:
             try:
                 folder = layer.name + '_' + str(layer.id) + '/' + user_collector.user.username
                 upload_url = storage.create_folder(folder)
                 user_collector.upload_url = upload_url
                 user_collector.folder = 'upload/' + folder
-                storage.share_file(folder, None, 'w')
+                storage.share_file('upload/' + folder, None, 'w')
                 user_collector.save()
                 send_mail('Folder Upload Project %s' % layer.title,
 '''Berikut adalah folder upload untuk project %s user %s .

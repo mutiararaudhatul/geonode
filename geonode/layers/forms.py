@@ -99,9 +99,9 @@ class DatasetForm(ResourceBaseForm):
     
     def clean(self):
         cleaned_data = super().clean()
-        int_storage = cleaned_data['intermediate_storage']
-        is_data_collector = cleaned_data['is_data_collector']
-        user_collector = cleaned_data['user_collector']
+        int_storage = cleaned_data.get('intermediate_storage')
+        is_data_collector = cleaned_data.get('is_data_collector')
+        user_collector = cleaned_data.get('user_collector')
 
         if is_data_collector and not int_storage:
             raise ValidationError('Please choose intermediate storage')
