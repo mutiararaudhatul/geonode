@@ -95,18 +95,19 @@ class DatasetForm(ResourceBaseForm):
         queryset = get_user_model().objects.filter(id__gt=-1),
         widget = forms.CheckboxSelectMultiple
     )
-    reupload_this_dataset_as_source = forms.BooleanField(label=_('reupload this dataset as source'), help_text=_('reupload this dataset'), initial=False)
+    reupload_this_dataset_as_source = forms.BooleanField(label=_('Reupload this dataset as source'), help_text=_('reupload this dataset'), initial=False, required=False)
     
-    def clean_is_data_collector(self):
-        int_storage = self.cleaned_data['intermediate_storage']
-        is_data_collector = self.cleaned_data['is_data_collector']
-        user_collector = self.cleaned_data['user_collector']
+    def clean(self):
+        cleaned_data = super().clean()
+        int_storage = cleaned_data['intermediate_storage']
+        is_data_collector = cleaned_data['is_data_collector']
+        user_collector = cleaned_data['user_collector']
 
         if is_data_collector and not int_storage:
             raise ValidationError('Please choose intermediate storage')
         if is_data_collector and not user_collector:
             raise ValidationError('Choose user collector')
-        return is_data_collector
+        return cleaned_data
 
 
 class LayerUploadForm(forms.Form):

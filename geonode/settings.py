@@ -670,7 +670,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'formatter': 'simple'
+            'filename': '/mnt/volumes/statics/geokincia.log'
         }
     },
     "loggers": {

@@ -72,8 +72,13 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
             source_url = storage.upload_file(os.path.basename(source_file))
             layer.source_url = source_url
             layer.file_path = os.path.join('source', os.path.basename(source_file))
-            storage.share_file(layer.file_path, users, 'r', 'Dataset sumber project:' + layer.title)
+            storage.share_file(layer.file_path, None, 'r')
             layer.save()
+            send_mail('Source Dataset Project %s' % layer.title,
+'''Berikut adalah source dataset untuk project %s .
+%s
+Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, source_url)
+            ,None, users)
         except:
             logger.error(f'fail to update source dataet {dataset_id}')
             send_mail(f'Project {layer.title}: Gagal Buat Source Dataset',
@@ -92,7 +97,7 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
 '''Berikut adalah folder upload untuk project %s user %s .
 %s
 Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, user_collector.user.username, upload_url)
-            ,None, users)
+            ,None, [user_collector.user.email])
             except:
                 logger.warning(f'fail to create upload folder for user {user_collector.user.username} dataset {dataset_id}')
                 send_mail(f'Project {layer.title}: Gagal Buat Upload Folder',
