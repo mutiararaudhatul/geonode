@@ -17,10 +17,12 @@
 #
 #########################################################################
 import os
+from xml.dom import ValidationErr
 import zipfile
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.forms import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from geonode import geoserver
@@ -74,7 +76,7 @@ class DatasetForm(ResourceBaseForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['regions'].choices = get_tree_data()
-        self.fields['intermediate_source_storage'].disabled = True
+        self.fields['source_url'].disabled = True
         for field in self.fields:
             help_text = self.fields[field].help_text
             self.fields[field].help_text = None
@@ -93,8 +95,18 @@ class DatasetForm(ResourceBaseForm):
         queryset = get_user_model().objects.filter(id__gt=-1),
         widget = forms.CheckboxSelectMultiple
     )
-    upload_this_dataset_as_source = forms.BooleanField(label=_('upload'), help_text=_('upload'), initial=False)
+    reupload_this_dataset_as_source = forms.BooleanField(label=_('reupload this dataset as source'), help_text=_('reupload this dataset'), initial=False)
+    
+    def clean_is_data_collector(self):
+        int_storage = self.cleaned_data['intermediate_storage']
+        is_data_collector = self.cleaned_data['is_data_collector']
+        user_collector = self.cleaned_data['user_collector']
 
+        if is_data_collector and not int_storage:
+            raise ValidationError('Please choose intermediate storage')
+        if is_data_collector and not user_collector:
+            raise ValidationError('Choose user collector')
+        return is_data_collector
 
 
 class LayerUploadForm(forms.Form):

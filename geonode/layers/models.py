@@ -17,6 +17,7 @@
 #
 #########################################################################
 from distutils.command.upload import upload
+from email.policy import default
 import re
 import logging
 
@@ -41,8 +42,6 @@ from geonode.security.permissions import (
 from geonode.base.models import (
     ResourceBase,
     ResourceBaseManager)
-
-from geokincia.tasks import prepare_dataset_task, delete_file_task
 
 logger = logging.getLogger("geonode.layers.models")
 
@@ -128,6 +127,8 @@ class Dataset(ResourceBase):
         ]
     }
 
+    STORAGES = [('', None)] + [(s,s) for s in settings.GEOKINCIA['STORAGE'].keys()]
+    
     # internal fields
     objects = DatasetManager()
     workspace = models.CharField(_('Workspace'), max_length=255)
@@ -199,8 +200,8 @@ class Dataset(ResourceBase):
         choices=[(s,s) for s in settings.GEOKINCIA['STORAGE'].keys()],
         blank=True, null=True)
     source_url = models.CharField(max_length=255, blank=True, null=True)
-    user_collector = models.ManyToManyField(settings.AUTH_USER_MODEL, through='UserCollectorStorage')
-    file_path = models.CharField(max_length=200)
+    user_collector = models.ManyToManyField(settings.AUTH_USER_MODEL, through='UserCollectorStorage', blank=True)
+    file_path = models.CharField(max_length=200, blank=True, null=True)
 
     def is_vector(self):
         return self.subtype in ['vector', 'vector_time']
@@ -570,7 +571,7 @@ class UserCollectorStorage(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     upload_url = models.CharField(max_length=2000, blank=True, null=True)
     intermediate_dataset_name = models.CharField(max_length=1000, blank=True, null=True)
-    folder = models.CharField(max_length=200)
+    folder = models.CharField(max_length=200, blank=True, null=True)
 
     def __str__(self) -> str:
         return self.user.username + ' | ' + self.upload_url

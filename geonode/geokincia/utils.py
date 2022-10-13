@@ -1,12 +1,10 @@
 from django.conf import settings
 
 from geonode.layers.models import Dataset, UserCollectorStorage
-from geoserver.createlayer import create_dataset
-
-from datetime import datetime
+from geonode.geoserver.createlayer.utils import create_dataset
+from . import db_utils
 
 import requests
-import db_utils
 import importlib
 import subprocess
 import re
@@ -23,6 +21,7 @@ def get_class(full_class_name):
     return init_class()
 
 def process_csv(csv_file, user, layer_id):
+    logger.debug(f'process_csv')
     try:
         layer = Dataset.objects.get(id=layer_id)
     except Dataset.DoesNotExist or UserCollectorStorage.DoesNotExist:
@@ -32,6 +31,7 @@ def process_csv(csv_file, user, layer_id):
     target_layer = layer.name
     auto_fill = layer.auto_fill_attribute
     if not layer.use_aggregate_data:
+        logger.debug(f'process_csv not use aggregate data')
         user_collector = UserCollectorStorage.objects.get(dataset=layer, user__username=user)
         if not user_collector.intermediate_dataset_name:
             #if not sync create dataset
@@ -43,9 +43,11 @@ def process_csv(csv_file, user, layer_id):
             target_layer = user_collector.intermediate_dataset_name
         db_utils.load_from_csv(settings.DATABASES['GEOSERVER'], csv_file, target_layer, False, auto_fill)
     else:
+        logger.debug(f'process_csv use aggregate data')
         db_utils.load_from_csv(settings.DATABASES['GEOSERVER'], csv_file, target_layer, True, auto_fill)
 
 def process_shp(shp_file, user, layer_id):
+    logger.debug(f'process_shp')
     s = subprocess.run(f'ogr2ogr -f CSV -overwrite out.csv {os.path.basename(shp_file)} -lco GEOMETRY=AS_WKT', capture_output=True, cwd=os.path.dirname(shp_file), shell=True)
     if s.returncode != 0:
         logger.debug(f'fail conver shp to csv {s.stderr} {s.stdout}')
@@ -82,7 +84,7 @@ def download_source_dataset(ws, name):
     local_filename = os.path.join(settings.GEOKINCIA['WORKING_DIR'], 'source', name + '.zip')
     if not os.path.exists(os.path.dirname(local_filename)):
         os.makedirs(os.path.dirname(local_filename))
-
+    
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         with open(local_filename, 'wb') as f:

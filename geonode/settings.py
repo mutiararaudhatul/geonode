@@ -444,7 +444,7 @@ GEONODE_INTERNAL_APPS = (
     'geonode.messaging',
     'geonode.favorite',
     'geonode.monitoring'
-)
+    )
 
 GEONODE_CONTRIB_APPS = (
     # GeoNode Contrib Apps
@@ -522,7 +522,6 @@ INSTALLED_APPS = (
 
     # GeoNode
     'geonode',
-    'geokincia',
 )
 
 markdown_white_listed_tags = [
@@ -667,6 +666,11 @@ LOGGING = {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'formatter': 'simple'
         }
     },
     "loggers": {
@@ -682,6 +686,9 @@ LOGGING = {
             "handlers": ["console"], "level": "ERROR", },
         "celery": {
             'handlers': ["console"], 'level': 'ERROR', },
+        "geonode.geokincia": {
+            "handlers": ["file"], "level": "DEBUG"
+        }
     },
 }
 
@@ -2232,7 +2239,7 @@ GEOKINCIA = {
     'ATTACHMENT_DIR': STATIC_ROOT + '/attachment',
     'STORAGE': {
         'GOOGLE_DRIVE': {
-            'CLASS_NAME': 'geokincia.storage.gdrive.GDriveStorage'
+            'CLASS_NAME': 'geonode.geokincia.storage.gdrive.GDriveStorage'
         }        
     }
 }

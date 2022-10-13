@@ -29,10 +29,10 @@ logger = get_task_logger(__name__)
     retry_backoff=3,
     retry_backoff_max=30,
     retry_jitter=False)
-def prepare_dataset_task(self, dataset_id):
+def prepare_dataset_task(self, dataset_id, reupload=False):
     try:
         layer = Dataset.objects.get(id=dataset_id)
-        user_collectors = UserCollectorStorage.objects.get(dataset=layer)
+        user_collectors = UserCollectorStorage.objects.filter(dataset=layer)
     except Dataset.DoesNotExist or UserCollectorStorage.DoesNotExist:
         logger.warning(f"Layers {dataset_id} or collector does not exist!")
         return
@@ -53,21 +53,31 @@ def prepare_dataset_task(self, dataset_id):
     if layer.group:
         for user_group in get_user_model().objects.filter(groups__in=[layer.group.id]):
             users.add(user_group.email)
-    for u in [user_collector in user_collectors]:
+    for u in user_collectors:
         users.add(u.user.email)
     #src
-    try:
-        source_file = utils.download_source_dataset(layer.workspace, layer.name)
-            
-        source_url = storage.upload_file(os.path.basename(source_file))
-        layer.source_url = source_url
-        layer.file_path = os.path.join('source', os.path.basename(source_file))
-        storage.share_file(layer.file_path, users, 'r', 'Dataset sumber project:' + layer.title)
-        layer.save()
-    except:
-        logger.error(f'fail to update source dataet {dataset_id}')
-        send_mail(f'Project {layer.title}: Gagal Buat Source Dataset',
-                f'Gagal membuat  source dataset untuk project {layer.title}',None, admins)
+    if not layer.source_url:
+        reupload = True
+    if reupload:
+        try:
+            if layer.source_url:
+                logger.debug(f'delete {layer.file_path}')
+                storage.delete_file(layer.file_path)
+                try:
+                    os.remove(os.path.join(settings.GEOKINCIA['WORKING_DIR'], layer.file_path))
+                except:
+                    pass
+            source_file = utils.download_source_dataset(layer.workspace, layer.name)
+            logger.debug(f'')
+            source_url = storage.upload_file(os.path.basename(source_file))
+            layer.source_url = source_url
+            layer.file_path = os.path.join('source', os.path.basename(source_file))
+            storage.share_file(layer.file_path, users, 'r', 'Dataset sumber project:' + layer.title)
+            layer.save()
+        except:
+            logger.error(f'fail to update source dataet {dataset_id}')
+            send_mail(f'Project {layer.title}: Gagal Buat Source Dataset',
+                    f'Gagal membuat  source dataset untuk project {layer.title}',None, admins)
     #upload
     for user_collector in user_collectors:
         if not user_collector.upload_url:
@@ -162,7 +172,11 @@ def delete_file_task(self, storage_provider, filename):
     storage_config = settings.GEOKINCIA['STORAGE'][storage_provider]
     storage = utils.get_class(storage_config['CLASS_NAME'])
     storage.delete_file(filename)
+    f_path = os.path.join(settings.GEOKINCIA['WORKING_DIR'], filename)
     try:
-        shutil.rmtree(os.path.join(settings.GEOKINCIA['WORKING_DIR'], filename))
+        if os.path.isdir(f_path):
+            shutil.rmtree(f_path)
+        else:
+            os.remove(f_path)
     except:
         pass

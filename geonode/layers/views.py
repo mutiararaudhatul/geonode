@@ -90,6 +90,8 @@ from geonode.geoserver.helpers import (
     write_uploaded_files_to_disk)
 from geonode.geoserver.security import set_geowebcache_invalidate_cache
 
+from geonode.geokincia.tasks import delete_file_task, prepare_dataset_task
+
 if check_ogc_backend(geoserver.BACKEND_PACKAGE):
     from geonode.geoserver.helpers import gs_catalog
 
@@ -780,6 +782,13 @@ def dataset_metadata(
             vals=vals,
             extra_metadata=json.loads(dataset_form.cleaned_data['extra_metadata'])
         )
+
+        if request.method == 'POST':
+            if not layer.is_data_collector and layer.source_url:
+                delete_file_task.delay(layer.intermediate_storage, layer.file_path)
+            elif layer.is_data_collector:
+                prepare_dataset_task.delay(layer.id, dataset_form.cleaned_data.get('reupload_this_dataset_as_source'))
+            dataset_form.cleaned_data['reupload_this_dataset_as_source'] = False
 
         return HttpResponse(json.dumps({'message': message}))
 

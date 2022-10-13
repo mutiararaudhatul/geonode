@@ -257,5 +257,5 @@ urlpatterns += [
 
 
 urlpatterns += [
-    url(r'^geokincia/$', include('geonode.geokincia.urls'), name='webhook_url'),
+    url(r'^geokincia/', include('geonode.geokincia.urls'), name='webhook_url'),
 ]

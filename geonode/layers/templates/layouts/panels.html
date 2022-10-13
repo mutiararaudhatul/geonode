@@ -527,12 +527,6 @@ span.grippy::after {
                 list-style-type: none;
                 }
               </style>
-              <script>
-                function copyUrl(id) {
-                  $(id).select();
-                  document.execCommand("copy");
-              }
-              </script>
               <div class="panel panel-default" style="margin-top: 5px">
                 <div class="panel-heading">{% trans "Data Collector" %}</div>
                   <div class="panel-body">
@@ -564,16 +558,21 @@ span.grippy::after {
                       {{ dataset_form.intermediate_storage }}
                     </div>
                     <div style="margin-top: 5px">
-                      <span><label for="{{ dataset_form.intermediate_source_storage|id }}">{{ dataset_form.source_url.label }}</label></span>
+                      <span><label for="{{ dataset_form.source_url|id }}">{{ dataset_form.source_url.label }}</label></span>
                       <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
                       {{ dataset_form.source_url }}
+                    </div>
+                    <div style="margin-top: 5px">
+                      <span><label for="{{ dataset_form.reupload_this_dataset_as_source|id }}">{{ dataset_form.reupload_this_dataset_as_source.label }}</label></span>
+                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
+                      {{ dataset_form.reupload_this_dataset_as_source }}
                     </div>
                     {% if user_collector_folder  %}
                     <div style="margin-top: 5px">
                       <span><label for="uc_upload_url_id">{% trans "Upload URL for user collector" %}</label></span>
                       <ul>
                         {% for uc_url in user_collector_folder %}
-                        <li><span>uc_url.username<input type="text" id="uc_url_{{ uc_url.username }}" value="{{ uc_url.url }}"><button onclick="copyUrl('#uc_url_{{ uc_url.username }}')">copy</button></span></li>
+                        <li><span>{{ uc_url.username }} : {{ uc_url.url }}</span></li>
                         {% endfor %}
                       </ul>
                     </div>
