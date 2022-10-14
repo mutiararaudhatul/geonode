@@ -162,7 +162,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
     for i in range(len(rows)):
         row[i] = [r if len(r) > 0 else None for r in rows[i]]
 
-    index_id = header.index('internal_id')
+    index_id = header.index('___id')
     index_geom = 0
 
     index_att = None
@@ -175,7 +175,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
 
     target_columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
     target_columns.append(name_att)
-    remove_columns = ['internal_attachment']
+    remove_columns = ['___att']
     remove_columns.append(get_primary_key(conn_name, target_table))
 
     for column in header:
@@ -190,11 +190,11 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
         header[c_index:c_index+1] = []
         for i in range(len(rows)):
             rows[i][c_index:c_index+1] = []
-    header[index_att] = 'internal_attachment'
+    header[index_att] = '___att'
 
     if auto_fill:
         try:
-            index_misc = header.index('internal_misc')
+            index_misc = header.index('___misc')
             row = rows[0]
             for i in range(len(rows)):
                 if str(rows[i][index_misc]).strip().lower() == 'auto':
@@ -232,10 +232,10 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
     if updated_rows:
         for row in updated_rows:
             existing_att = execute_query(conn_name,
-                'select "internal_attachment" from "%s" where "internal_id"=\'%s\'' % (target_table, row[index_id]), None, True)
-            row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['internal_attachment'])
+                'select "___att" from "%s" where "___id"=\'%s\'' % (target_table, row[index_id]), None, True)
+            row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['___att'])
             logger.debug(f'try to update {row}')
-            update_row(conn_name, target_table, header, row, 'internal_id', row[index_id])
+            update_row(conn_name, target_table, header, row, '___id', row[index_id])
 
 
 

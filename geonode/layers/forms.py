@@ -67,7 +67,8 @@ class DatasetForm(ResourceBaseForm):
             'groups_geolimits',
             'blob',
             'files',
-            'ows_url'
+            'ows_url',
+            'file_path',
         )
         # widgets = {
         #     'title': forms.TextInput({'placeholder': title_help_text})
@@ -101,12 +102,9 @@ class DatasetForm(ResourceBaseForm):
         cleaned_data = super().clean()
         int_storage = cleaned_data.get('intermediate_storage')
         is_data_collector = cleaned_data.get('is_data_collector')
-        user_collector = cleaned_data.get('user_collector')
 
         if is_data_collector and not int_storage:
             raise ValidationError('Please choose intermediate storage')
-        if is_data_collector and not user_collector:
-            raise ValidationError('Choose user collector')
         return cleaned_data
 
 

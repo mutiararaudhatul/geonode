@@ -14,3 +14,8 @@ def delete_intermediate_storage(sender, instance, *args, **kwargs):
     logger.debug(f'delete folder {instance.folder}')
     delete_file_task.delay(instance.dataset.intermediate_storage, instance.folder)
     
+@receiver(post_delete, sender=Dataset)
+def delete_dataset(sender, instance, *args, **kwargs):
+    logger.debug(f'delete dataset {instance.id}')
+    if instance.is_data_collector and instance.source_url:
+        delete_file_task.delay(instance.dataset.intermediate_storage, instance.file_path)

@@ -241,7 +241,7 @@ class Dataset(ResourceBase):
             _attrs = self.attribute_set
         else:
             _attrs = Attribute.objects.filter(dataset=self)
-        return _attrs.exclude(attribute='the_geom').exclude(attribute='internal_id').exclude(attribute='internal_misc').exclude(attribute='internal_attachments').order_by('display_order')
+        return _attrs.exclude(attribute='the_geom').exclude(attribute='___id').exclude(attribute='___misc').exclude(attribute='___att').order_by('display_order')
 
     @property
     def service_typename(self):

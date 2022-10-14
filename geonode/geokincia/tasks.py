@@ -77,11 +77,11 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
 '''Berikut adalah source dataset untuk project %s .
 %s
 Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, source_url)
-            ,None, users)
+            , settings.DEFAULT_FROM_EMAIL, users, fail_silently=True)
         except:
             logger.error(f'fail to update source dataet {dataset_id}')
             send_mail(f'Project {layer.title}: Gagal Buat Source Dataset',
-                    f'Gagal membuat  source dataset untuk project {layer.title}',None, admins)
+                    f'Gagal membuat  source dataset untuk project {layer.title}', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
     #upload
     logger.debug(f'user_collectors {len(user_collectors)}')
     for user_collector in user_collectors:
@@ -98,11 +98,11 @@ Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, sourc
 '''Berikut adalah folder upload untuk project %s user %s .
 %s
 Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, user_collector.user.username, upload_url)
-            ,None, [user_collector.user.email])
+            , settings.DEFAULT_FROM_EMAIL, [user_collector.user.email], fail_silently=True)
             except:
                 logger.warning(f'fail to create upload folder for user {user_collector.user.username} dataset {dataset_id}')
                 send_mail(f'Project {layer.title}: Gagal Buat Upload Folder',
-                f'Gagal membuat upload folder untuk project {layer.title} user {user_collector.user.username}',None, admins)
+                f'Gagal membuat upload folder untuk project {layer.title} user {user_collector.user.username}', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
             
 
 @app.task(
@@ -134,7 +134,7 @@ def process_uploaded_data_task(self, storage_provider):
     except:
         logger.warning(f'fail to pull uploaded dataset')
         send_mail(f'{storage_provider} Pull dataset gagal ',
-                f'{storage_provider} Pull dataset gagal',None, admins)
+                f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
     for layer_dir in os.listdir(upload_dir):
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
@@ -160,7 +160,7 @@ def process_uploaded_data_task(self, storage_provider):
                         shutil.move(uploaded_path, user_error_dir)
                         logger.warning(f'fail to pull uploaded dataset')
                         send_mail(f'{storage_provider} Pull dataset gagal ',
-                                f'{storage_provider} Pull dataset gagal',None, admins)
+                                f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
 @app.task(
     bind=True,
