@@ -28,23 +28,19 @@ def process_csv(csv_file, user, layer_id):
         logger.warning(f"Layers {layer_id} or collector does not exist!")
         return
 
-    target_layer = layer.name
-    auto_fill = layer.auto_fill_attribute
-    if not layer.use_aggregate_data:
-        logger.debug(f'process_csv not use aggregate data')
-        user_collector = UserCollectorStorage.objects.get(dataset=layer, user__username=user)
-        if not user_collector.intermediate_dataset_name:
+    src_layer = layer.name
+    logger.debug(f'process_csv not use aggregate data')
+    user_collector = UserCollectorStorage.objects.get(dataset=layer, user__username=user)
+    if not user_collector.intermediate_dataset_name:
             #if not sync create dataset
-            new_dataset = create_new_collector_dataset(layer, user_collector.user.username)
-            target_layer = new_dataset.name
-            user_collector.intermediate_dataset_name = target_layer
-            user_collector.save()
-        else:
-            target_layer = user_collector.intermediate_dataset_name
-        db_utils.load_from_csv(settings.DATABASES['GEOSERVER'], csv_file, target_layer, False, auto_fill)
+        new_dataset = create_new_collector_dataset(layer, user_collector.user.username)
+        target_layer = new_dataset.name
+        user_collector.intermediate_dataset_name = target_layer
+        user_collector.save()
     else:
-        logger.debug(f'process_csv use aggregate data')
-        db_utils.load_from_csv(settings.DATABASES['GEOSERVER'], csv_file, target_layer, True, auto_fill)
+        target_layer = user_collector.intermediate_dataset_name
+    logger.debug(f'process_csv use aggregate data')
+    db_utils.load_from_csv(settings.DATABASES['GEOSERVER'], csv_file, target_layer, layer.use_aggregate_data, src_layer)
 
 def process_shp(shp_file, user, layer_id):
     logger.debug(f'process_shp')
@@ -79,7 +75,7 @@ def create_new_collector_dataset(layer, username):
     return create_dataset(f'{layer.name}_{username}', layer.title, layer.owner.username, geometry_type[0], attributes, True, gid)
 
 def download_source_dataset(ws, name):
-    url = '%swfs?request=GetFeature&typeName=%s:%s&outputformat=SHAPE-ZIP' % (settings.GEOSERVER_LOCATION, ws, name)
+    url = '%swfs?service=wfs&version=1.0.0&request=GetFeature&typeName=%s:%s&outputformat=SHAPE-ZIP' % (settings.GEOSERVER_LOCATION, ws, name)
     logger.debug(f'get source {url}')
     local_filename = os.path.join(settings.GEOKINCIA['WORKING_DIR'], 'source', name + '.zip')
     if not os.path.exists(os.path.dirname(local_filename)):

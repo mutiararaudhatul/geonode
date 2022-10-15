@@ -39,6 +39,7 @@ def process_attachment(attachment, cwd='.', existing_attachment=''):
             if not os.path.exists(target):
                 shutil.copy2(origin, attachment_dir)
             new_attachments.append(f_prop)
+    logger.debug(f'process_attachment {";".join(new_attachments + existing_attachments)}')
     return ';'.join(new_attachments + existing_attachments)
 
 
@@ -52,6 +53,7 @@ def dictfetchall(cursor):
 
 def execute_query(conn_name, query, params, is_return, is_dict=True):
     '''Execute query'''
+    logger.debug(f'q: {query}')
     with connections[conn_name].cursor() as cursor:
         if params:
             cursor.execute(query, params)
@@ -62,6 +64,10 @@ def execute_query(conn_name, query, params, is_return, is_dict=True):
                 return dictfetchall(cursor)
             else:
                 return cursor.fetchall()
+
+def empty_table(conn_name, table):
+    q = f'delete from {table}'
+    execute_query(conn_name, q, None, False)
 
 def get_column_name(conn_name, table_name):
     q = '''select column_name, data_type from information_schema.columns where table_schema = 'public'
@@ -99,10 +105,10 @@ def insert_row(conn_name, table_name, colums, values, add_multi=None, target_geo
 def update_row(conn_name, table_name, columns, values, col_id, col_id_value, add_multi=None, target_geo='', geo_value=''):
     update_values = []
     for i in range(len(columns)):
-        value = "null" if values[i] is None else "%s='%s'" % (columns[i], values[i])
+        value = "null" if values[i] is None else "\"%s\"='%s'" % (columns[i], values[i])
         update_values.append(value)
 
-    q = "update %s set %s where %s='%s' " % (table_name, ','.join(update_values), col_id, col_id_value)
+    q = "update %s set %s where \"%s\"='%s' " % (table_name, ','.join(update_values), col_id, col_id_value)
     if add_multi:
         q = q + '"%s" = st_multi(st\'%s\')' % (target_geo, geo_value)
     execute_query(conn_name, q, None, False)
@@ -145,7 +151,7 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
     elif target_geom[0] != 'MULTI' and src_geom[0] == 'MULTI':
         return list(map(_to_single, rows))
 
-def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
+def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None):
     rows = []
     header = []
     with open(csv_file, 'r') as f:
@@ -162,8 +168,9 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
     for i in range(len(rows)):
         row[i] = [r if len(r) > 0 else None for r in rows[i]]
 
-    index_id = header.index('___id')
+    index_id = header.index('z___id')
     index_geom = 0
+    index_update = header.index('z___update')
 
     index_att = None
     name_att = ''
@@ -175,7 +182,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
 
     target_columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
     target_columns.append(name_att)
-    remove_columns = ['___att']
+    remove_columns = ['z___att']
     remove_columns.append(get_primary_key(conn_name, target_table))
 
     for column in header:
@@ -190,20 +197,8 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
         header[c_index:c_index+1] = []
         for i in range(len(rows)):
             rows[i][c_index:c_index+1] = []
-    header[index_att] = '___att'
+    header[index_att] = 'z___att'
 
-    if auto_fill:
-        try:
-            index_misc = header.index('___misc')
-            row = rows[0]
-            for i in range(len(rows)):
-                if str(rows[i][index_misc]).strip().lower() == 'auto':
-                    for j in range(len(row)):
-                        if not rows[i][j] and not j in [0, index_att, index_id]:
-                            rows[i][j] = row[j]
-                row = rows[i][j]
-        except:
-            logger.debug('fail to auto fill check internal_misc)')
     try:
         target_geo = get_geom_column(conn_name, target_table)
         target_geo_type = re.findall(r'(MULTI)*(\w+)', target_geo['type'], re.IGNORECASE)
@@ -214,28 +209,62 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, auto_fill=False):
     except:
         raise Exception
 
-    if is_sync:
-        inserted_rows = list(filter(lambda r: not r[index_id], rows))
-        for row in inserted_rows:
-            row[index_id] = str(uuid.uuid4())
-        updated_rows = list(filter(lambda r: r[index_id], rows))
-    else:
-        inserted_rows = rows
+    empty_table(conn_name, target_table)
 
     basedir = os.path.dirname(csv_file)
     logger.debug(f'final header {header}')
-    if inserted_rows:
-        for row in inserted_rows:
-            row[index_att] = process_attachment(row[index_att], basedir)
-            logger.debug(f'try to insert {row}')
-            insert_row(conn_name, target_table, header, row)
-    if updated_rows:
-        for row in updated_rows:
-            existing_att = execute_query(conn_name,
-                'select "___att" from "%s" where "___id"=\'%s\'' % (target_table, row[index_id]), None, True)
-            row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['___att'])
-            logger.debug(f'try to update {row}')
-            update_row(conn_name, target_table, header, row, '___id', row[index_id])
+    if is_sync:
+        inserted_rows = list(filter(lambda r: not r[index_id], rows))
+        updated_rows = list(filter(lambda r: r[index_id] and r[index_update], rows))
+    else:
+        inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update], rows))
+        updated_rows = []
+
+    for row in inserted_rows:
+        row[index_att] = process_attachment(row[index_att], basedir)
+        logger.debug(f'try to insert {row}')
+        insert_row(conn_name, target_table, header, row)
+
+    for row in updated_rows:
+        existing_att = execute_query(conn_name,
+                'select "z___att" from "%s" where "z___id"=\'%s\'' % (src_table, row[index_id]), None, True)
+        row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['z___att'])
+        logger.debug(f'try to update {row}')
+        update_row(conn_name, src_table, header, row, 'z___id', row[index_id])
+
+def copy_table(conn_name, src_table, target_table):
+    columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
+    target_primary_index = columns.index(get_primary_key(conn_name, target_table))
+    columns[target_primary_index:target_primary_index+1] = []
+    target_geo = get_geom_column(conn_name, target_table)['f_geometry_column']
+    target_geo_index = columns[target_geo]
+    columns[target_geo_index:target_geo_index+1]
+    index_att = columns.index('z___att')
+    index_id = columns.index('z___id')
+    src_geo = get_geom_column(conn_name, src_table)['f_geometry_column']
+    quote_columns = [ f'"{c}"' for c in columns]
+
+    q = '''insert into "%s"("%s",%s) select "%s",%s from "%s" 
+    where ("z___id" = '') is not false and ("z___update" = '') is not false''' % \
+        (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), src_table)
+    
+    execute_query(conn_name, q, None, False)
+
+    q = '''select "%s",%s from %s where "z___id" <> '' and "z___update" <> '' ''' % \
+        (src_geo, ','.join(quote_columns), src_table)
+
+    for row in execute_query(conn_name, q, None, True, False):
+        existing_att_field = execute_query(conn_name,
+                'select "z___att" from "%s" where "z___id"=\'%s\'' % (src_table, row[index_id]), None, True)
+
+        existing_att = [att for att in existing_att_field.split(';')]
+        new_att = [att for att in row[index_att].split(';')]
+        merge_att = list(filter(lambda r: r is not None, [ None if att in existing_att else att for att in new_att]))
+
+        row[index_att] = ';'.join(merge_att + existing_att)
+        logger.debug(f'try to update {row}')
+        update_row(conn_name, target_table, [target_geo]+columns, row, 'z___id', row[index_id])
+
 
 
 

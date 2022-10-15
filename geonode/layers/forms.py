@@ -17,6 +17,7 @@
 #
 #########################################################################
 import os
+from wsgiref.validate import validator
 from xml.dom import ValidationErr
 import zipfile
 
@@ -46,7 +47,6 @@ class JSONField(forms.CharField):
             return json.loads(text)
         except ValueError:
             raise forms.ValidationError("this field must be valid JSON")
-
 
 class DatasetForm(ResourceBaseForm):
 
@@ -94,10 +94,11 @@ class DatasetForm(ResourceBaseForm):
                 )
     user_collector = forms.ModelMultipleChoiceField(
         queryset = get_user_model().objects.filter(id__gt=-1),
-        widget = forms.CheckboxSelectMultiple
+        widget = forms.CheckboxSelectMultiple, required=False
     )
-    reupload_this_dataset_as_source = forms.BooleanField(label=_('Reupload this dataset as source'), help_text=_('reupload this dataset'), initial=False, required=False)
-    
+    reupload_this_dataset_as_source = forms.BooleanField(label=_('Reupload This Dataset As Source'), help_text=_('reupload this dataset'), initial=False, required=False)
+    not_merge = forms.BooleanField(label=_('DO NOT Merge Data When Collector Off'), help_text=_('By default all data will merge'), initial=False, required=False)
+
     def clean(self):
         cleaned_data = super().clean()
         int_storage = cleaned_data.get('intermediate_storage')

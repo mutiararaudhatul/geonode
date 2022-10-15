@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.db.models.signals import post_delete
 
 from .models import Dataset, UserCollectorStorage
-from geonode.geokincia.tasks import delete_file_task, prepare_dataset_task
+from geonode.geokincia.tasks import delete_file_task
 
 import logging
 
@@ -18,4 +18,4 @@ def delete_intermediate_storage(sender, instance, *args, **kwargs):
 def delete_dataset(sender, instance, *args, **kwargs):
     logger.debug(f'delete dataset {instance.id}')
     if instance.is_data_collector and instance.source_url:
-        delete_file_task.delay(instance.dataset.intermediate_storage, instance.file_path)
+        delete_file_task.delay(instance.intermediate_storage, instance.file_path)

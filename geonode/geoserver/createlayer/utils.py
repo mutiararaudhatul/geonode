@@ -128,9 +128,9 @@ def get_attributes(geometry_type, json_attrs=None):
     gattr.append(f'com.vividsolutions.jts.geom.{geometry_type}')
     gattr.append({'nillable': False})
     lattrs.append(gattr)
-    lattrs.append(['___id', f'java.lang.String', {'nillable': True}])
-    lattrs.append(['___att', f'java.lang.String', {'nillable': True}])
-    lattrs.append(['___misc', f'java.lang.String', {'nillable': True}])
+    lattrs.append(['z___id', f'java.lang.String', {'nillable': True}])
+    lattrs.append(['z___att', f'java.lang.String', {'nillable': True}])
+    lattrs.append(['z___update', f'java.lang.String', {'nillable': True}])
     if json_attrs:
         jattrs = json.loads(json_attrs)
         for jattr in jattrs.items():

@@ -6,6 +6,7 @@ from django.db import connections
 from django.db.models import Q
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
+from geonode.geokincia import db_utils
 from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.celery_app import app
 from datetime import datetime
@@ -177,12 +178,40 @@ def process_uploaded_data_task(self, storage_provider):
 def delete_file_task(self, storage_provider, filename):
     storage_config = settings.GEOKINCIA['STORAGE'][storage_provider]
     storage = utils.get_class(storage_config['CLASS_NAME'])
-    storage.delete_file(filename)
-    f_path = os.path.join(settings.GEOKINCIA['WORKING_DIR'], filename)
     try:
+        storage.delete_file(filename)
+    except:
+        pass
+    try:
+        f_path = os.path.join(settings.GEOKINCIA['WORKING_DIR'], filename)
+    
         if os.path.isdir(f_path):
             shutil.rmtree(f_path)
         else:
             os.remove(f_path)
     except:
         pass
+
+@app.task(
+    bind=True,
+    name='geokincia.dataset.merge',
+    queue='cleanup',
+    expires=600,
+    time_limit=600,
+    acks_late=False,
+    autoretry_for=(Exception, ),
+    retry_kwargs={'max_retries': 5},
+    retry_backoff=3,
+    retry_backoff_max=30,
+    retry_jitter=False)
+def merge_dataset_task(self, dataset_id, uc_dataset):
+    try:
+        layer = Dataset.objects.get(id=dataset_id)
+    except Dataset.DoesNotExist:
+        logger.warning(f"Layers {dataset_id} or collector does not exist!")
+        return
+    for intermediate_dataset_name in uc_dataset:
+        if intermediate_dataset_name:
+            db_utils.copy_table(settings.DATABASES['GEOSERVER'], intermediate_dataset_name, layer.name)
+
+        

@@ -24,6 +24,7 @@ import logging
 import warnings
 import traceback
 from django.urls import reverse
+from geonode.layers.tasks import delete_dataset
 
 from owslib.wfs import WebFeatureService
 import xml.etree.ElementTree as ET
@@ -90,7 +91,7 @@ from geonode.geoserver.helpers import (
     write_uploaded_files_to_disk)
 from geonode.geoserver.security import set_geowebcache_invalidate_cache
 
-from geonode.geokincia.tasks import delete_file_task, prepare_dataset_task
+from geonode.geokincia.tasks import delete_file_task, prepare_dataset_task, merge_dataset_task
 
 if check_ogc_backend(geoserver.BACKEND_PACKAGE):
     from geonode.geoserver.helpers import gs_catalog
@@ -476,6 +477,8 @@ def dataset_metadata(
         Dataset.objects.filter(
             id=layer.id).update(popular_count=F('popular_count') + 1)
 
+    prev_is_data_collector = layer.is_data_collector
+
     if request.method == "POST":
         if layer.metadata_uploaded_preserve:  # layer metadata cannot be edited
             out = {
@@ -765,8 +768,13 @@ def dataset_metadata(
                 }
             )
 
-        # data coleector
         is_data_collector = dataset_form.cleaned_data.get('is_data_collector')
+        uc_dataset = None
+        if request.method == 'POST' and not is_data_collector and prev_is_data_collector:
+            uc_dataset = [uc.intermediate_dataset_name for uc in UserCollectorStorage.objects.filter(dataset=layer)]
+
+        # data coleector
+        
         if is_data_collector:
             users_collectors = dataset_form.cleaned_data.get('user_collector')
             for user in layer.user_collector.exclude(id__in=users_collectors):
@@ -781,6 +789,9 @@ def dataset_metadata(
             layer.auto_fill_attribute = False
             layer.file_path = None
             layer.source_url = None
+
+        
+
         resource_manager.update(
             layer.uuid,
             instance=layer,
@@ -789,8 +800,15 @@ def dataset_metadata(
             extra_metadata=json.loads(dataset_form.cleaned_data['extra_metadata'])
         )
 
-        if request.method == 'POST' and layer.is_data_collector:
-            prepare_dataset_task.delay(layer.id, dataset_form.cleaned_data.get('reupload_this_dataset_as_source'))
+        if request.method == 'POST':
+            if layer.is_data_collector:
+                prepare_dataset_task.delay(layer.id, dataset_form.cleaned_data.get('reupload_this_dataset_as_source'))
+                if uc_dataset:
+                    new_uc_ds = [uc.intermediate_dataset_name for uc in UserCollectorStorage.objects.filter(dataset=layer)]
+                    delete_dataset.delay(list(filter(lambda c: c not in new_uc_ds, uc_dataset)))
+            elif uc_dataset and not dataset_form.cleaned_data.get('not_merge'):
+                merge_dataset_task.delay(layer.id, uc_dataset)
+                delete_dataset.delay(uc_dataset)
 
         return HttpResponse(json.dumps({'message': message}))
 

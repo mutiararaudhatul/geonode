@@ -21,7 +21,7 @@
 from geonode.celery_app import app
 from celery.utils.log import get_task_logger
 
-from geonode.layers.models import Dataset
+from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.resource.manager import resource_manager
 
 logger = get_task_logger(__name__)
@@ -39,14 +39,32 @@ logger = get_task_logger(__name__)
     retry_backoff=3,
     retry_backoff_max=30,
     retry_jitter=False)
-def delete_dataset(self, dataset_id):
+def delete_dataset(self, dataset):
+    if type(dataset) is list:
+        for dataset_name in dataset:
+            delete_dataset_by_id_or_name(dataset_name)
+    else:
+        delete_dataset_by_id_or_name(dataset)        
+
+
+
+def delete_dataset_by_id_or_name(dataset_id_or_name):
     """
     Deletes a layer.
     """
     try:
-        layer = Dataset.objects.get(id=dataset_id)
+        if type(dataset_id_or_name) is str:
+            layer = Dataset.objects.get(name=dataset_id_or_name)
+        else:
+            layer = Dataset.objects.get(id=dataset_id_or_name)
     except Dataset.DoesNotExist:
-        logger.warning(f"Layers {dataset_id} does not exist!")
+        logger.warning(f"Layers {dataset_id_or_name} does not exist!")
         return
     logger.debug(f'Deleting Dataset {layer}')
+    if layer.is_data_collector:
+        ds_names = [ uc.intermediate_dataset_name for uc in UserCollectorStorage.objects.filter(dataset=layer) ]
+        collector_ds = Dataset.objects.filter(name__in=ds_names)
+        for ds in collector_ds:
+            resource_manager.delete(instance=ds)        
+        logger.debug(f'Deleting Collector dataset Dataset {layer}')
     resource_manager.delete(uuid=layer.uuid, instance=layer)

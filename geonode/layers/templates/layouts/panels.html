@@ -541,11 +541,6 @@ span.grippy::after {
                       {{ dataset_form.use_aggregate_data }}
                     </div>
                     <div style="margin-top: 5px">
-                      <span><label for="{{ dataset_form.auto_fill_attribute|id }}">{{ dataset_form.auto_fill_attribute.label }}</label></span>
-                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
-                      {{ dataset_form.auto_fill_attribute }}
-                    </div>
-                    <div style="margin-top: 5px">
                       <span><label for="{{ dataset_form.user_collector|id }}">{{ dataset_form.user_collector.label }}</label></span>
                       <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
                       <div class="uc_select">
@@ -566,6 +561,11 @@ span.grippy::after {
                       <span><label for="{{ dataset_form.reupload_this_dataset_as_source|id }}">{{ dataset_form.reupload_this_dataset_as_source.label }}</label></span>
                       <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
                       {{ dataset_form.reupload_this_dataset_as_source }}
+                    </div>
+                    <div style="margin-top: 5px">
+                      <span><label for="{{ dataset_form.not_merge|id }}">{{ dataset_form.not_merge.label }}</label></span>
+                      <!--<p class="xxs-font-size">(Identification of when a given event occurred)</p>-->
+                      {{ dataset_form.not_merge }}
                     </div>
                     {% if user_collector_folder  %}
                     <div style="margin-top: 5px">

@@ -987,7 +987,7 @@ def set_attributes(
                     if _gs_attrs.exists():
                         _gs_attrs.delete()
                     la = Attribute.objects.create(dataset=layer, attribute=field)
-                    la.visible = ftype.find("gml:") != 0 and not field.startswith('internal_')
+                    la.visible = ftype.find("gml:") != 0 and not field.startswith('z___')
                     la.attribute_type = ftype
                     la.description = description
                     la.attribute_label = label

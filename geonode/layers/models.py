@@ -186,17 +186,14 @@ class Dataset(ResourceBase):
 
     # data collector
     is_collector_dataset = models.BooleanField(default=False)
-    is_data_collector = models.BooleanField(_('use as data collector?'),
+    is_data_collector = models.BooleanField(_('Use As Data Collector?'),
         help_text=_('use data collector to populate this dataset'),
         default=False)
-    use_aggregate_data = models.BooleanField(_('aggregate data from data collector'),
+    use_aggregate_data = models.BooleanField(_('Sync Data From Data Collector'),
         help_text='syncronize this dataset from its data collector dataset',
         default=False)
-    auto_fill_attribute = models.BooleanField(_('auto fill'), 
-        help_text=_('copy attribute from previous'), default=False)
-    # auto_merge_for_multi = models.BooleanField(_('auto fill'), 
-    #    help_text=_('copy attribute from previous'), default=False)
-    intermediate_storage = models.CharField(_('intermediate storage'), max_length=255,
+    
+    intermediate_storage = models.CharField(_('Intermediate Storage'), max_length=255,
         choices=[(s,s) for s in settings.GEOKINCIA['STORAGE'].keys()],
         blank=True, null=True)
     source_url = models.CharField(max_length=255, blank=True, null=True)
