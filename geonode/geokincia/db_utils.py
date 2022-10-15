@@ -243,8 +243,9 @@ def copy_table(conn_name, src_table, target_table):
     index_id = columns.index('z___id')
     src_geo = get_geom_column(conn_name, src_table)['f_geometry_column']
     quote_columns = [ f'"{c}"' for c in columns]
+    quote_columns.remove('"z___id"')
 
-    q = '''insert into "%s"("%s",%s) select "%s",%s from "%s" 
+    q = '''insert into "%s"("%s","z___id", %s) select "%s",uuid_generate_v4(),%s from "%s" 
     where ("z___id" = '') is not false and ("z___update" = '') is not false''' % \
         (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), src_table)
     
@@ -252,7 +253,6 @@ def copy_table(conn_name, src_table, target_table):
 
     q = '''select "%s",%s from %s where "z___id" <> '' and "z___update" <> '' ''' % \
         (src_geo, ','.join(quote_columns), src_table)
-
     for row in execute_query(conn_name, q, None, True, False):
         existing_att_field = execute_query(conn_name,
                 'select "z___att" from "%s" where "z___id"=\'%s\'' % (src_table, row[index_id]), None, True)
