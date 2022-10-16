@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 @receiver(post_delete, sender=UserCollectorStorage)
 def delete_intermediate_storage(sender, instance, *args, **kwargs):
     logger.debug(f'delete folder {instance.folder}')
-    delete_file_task.delay(instance.dataset.intermediate_storage, instance.folder)
+    if instance.folder:
+        delete_file_task.delay(instance.dataset.intermediate_storage, instance.folder)
     
 @receiver(post_delete, sender=Dataset)
 def delete_dataset(sender, instance, *args, **kwargs):

@@ -14,6 +14,7 @@ import logging
 from . import utils
 
 import os
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,7 @@ Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, sourc
             , settings.DEFAULT_FROM_EMAIL, users, fail_silently=True)
         except:
             logger.error(f'fail to update source dataet {dataset_id}')
+            logger.debug(traceback.format_exc())
             send_mail(f'Project {layer.title}: Gagal Buat Source Dataset',
                     f'Gagal membuat  source dataset untuk project {layer.title}', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
     #upload
@@ -102,6 +104,7 @@ Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, user_
             , settings.DEFAULT_FROM_EMAIL, [user_collector.user.email], fail_silently=True)
             except:
                 logger.warning(f'fail to create upload folder for user {user_collector.user.username} dataset {dataset_id}')
+                logger.debug(traceback.format_exc())
                 send_mail(f'Project {layer.title}: Gagal Buat Upload Folder',
                 f'Gagal membuat upload folder untuk project {layer.title} user {user_collector.user.username}', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
             
@@ -120,8 +123,6 @@ Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, user_
     retry_jitter=False)
 def process_uploaded_data_task(self, storage_provider):
     upload_dir = os.path.join(settings.GEOKINCIA['WORKING_DIR'], 'upload')
-    error_dir = os.path.join(settings.GEOKINCIA['WORKING_DIR'], 'processed', 'error')
-    succes_dir = os.path.join(settings.GEOKINCIA['WORKING_DIR'], 'processed', 'success')
     
     storage_config = settings.GEOKINCIA['STORAGE'][storage_provider]
     storage = utils.get_class(storage_config['CLASS_NAME'])
@@ -134,32 +135,29 @@ def process_uploaded_data_task(self, storage_provider):
         storage.download_file('upload')
     except:
         logger.warning(f'fail to pull uploaded dataset')
+        logger.debug(traceback.format_exc())
         send_mail(f'{storage_provider} Pull dataset gagal ',
                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
     for layer_dir in os.listdir(upload_dir):
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
             for uploaded in os.listdir(os.path.join(upload_dir, layer_dir, user_dataset)):
-                if os.path.isdir(os.path.join(upload_dir, layer_dir, user_dataset, uploaded)):
-                    uploaded_path = os.path.join(upload_dir, layer_dir, user_dataset, uploaded)
+                uploaded_path = os.path.join(upload_dir, layer_dir, user_dataset, uploaded)
+                if not uploaded.startswith('___processed_') and os.path.isdir(uploaded_path):
                     try:
                         csv_shp = list(filter(lambda f: f.lower().endswith('.csv') or f.lower().endswith('.shp'), os.listdir(uploaded_path)))
                         processed_file = csv_shp.pop() if csv_shp else ''
-                        if os.path.isfile(os.path.join(uploaded_path), processed_file):
+                        if os.path.isfile(os.path.join(uploaded_path, processed_file)):
                             if processed_file.lower().endswith('.csv'):
                                 utils.process_csv(os.path.join(uploaded_path, processed_file), user_dataset, int(layer_dir.split('_')[-1]))
                             elif processed_file.lower().endswith('.shp'):
                                 utils.process_shp(os.path.join(uploaded_path, processed_file), user_dataset, int(layer_dir.split('_')[-1]))
                                 
-                        user_success_dir = os.path.join(succes_dir, user_dataset, str(int(datetime.now().timestamp())))
-                        os.makedirs(user_success_dir)
-                        shutil.move(uploaded_path, user_success_dir)
-                        storage.delete_file(f'upload/{layer_dir}/{user_dataset}/{uploaded}')
+                        storage.move(uploaded_path, f'___processed_{uploaded}_success')
                     except:
-                        user_error_dir = os.path.join(error_dir, user_dataset, str(int(datetime.now().timestamp())))
-                        os.makedirs(user_error_dir)
-                        shutil.move(uploaded_path, user_error_dir)
-                        logger.warning(f'fail to pull uploaded dataset')
+                        logger.warning(f'fail to processed uploaded dataset')
+                        logger.debug(traceback.format_exc())
+                        storage.move(uploaded_path, f'processed_{uploaded}_error')
                         send_mail(f'{storage_provider} Pull dataset gagal ',
                                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
@@ -212,6 +210,6 @@ def merge_dataset_task(self, dataset_id, uc_dataset):
         return
     for intermediate_dataset_name in uc_dataset:
         if intermediate_dataset_name:
-            db_utils.copy_table(settings.DATABASES['GEOSERVER'], intermediate_dataset_name, layer.name)
+            db_utils.copy_table('datastore', intermediate_dataset_name, layer.name)
 
         

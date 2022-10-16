@@ -987,11 +987,14 @@ def set_attributes(
                     if _gs_attrs.exists():
                         _gs_attrs.delete()
                     la = Attribute.objects.create(dataset=layer, attribute=field)
-                    la.visible = ftype.find("gml:") != 0 and not field.startswith('z___')
+                    la.visible = ftype.find("gml:") != 0 and not field.startswith('___')
                     la.attribute_type = ftype
                     la.description = description
                     la.attribute_label = label
-                    la.display_order = iter
+                    if field == '___id' or field == '___att':
+                        la.display_order = iter + 1000    
+                    else:
+                        la.display_order = iter
                     iter += 1
                 if (not attribute_stats or layer.name not in attribute_stats or
                         field not in attribute_stats[layer.name]):

@@ -10,6 +10,7 @@ import subprocess
 import re
 import os
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def process_csv(csv_file, user, layer_id):
     else:
         target_layer = user_collector.intermediate_dataset_name
     logger.debug(f'process_csv use aggregate data')
-    db_utils.load_from_csv(settings.DATABASES['GEOSERVER'], csv_file, target_layer, layer.use_aggregate_data, src_layer)
+    db_utils.load_from_csv('datastore', csv_file, target_layer, layer.use_aggregate_data, src_layer)
 
 def process_shp(shp_file, user, layer_id):
     logger.debug(f'process_shp')
@@ -54,14 +55,14 @@ def process_shp(shp_file, user, layer_id):
 def create_new_collector_dataset(layer, username):
     ATTRIBUTE_TYPE_MAPPING = {'xsd:string': 'string', 'xsd:int': 'integer', 'xsd:float': 'float', 'xsd:dateTime': 'date'}
     ATTRIBUTE_GEO_PREFIX = 'gml:'
-    ATTRIBUTE_SKIP_PREFIX = 'internal_'
+    ATTRIBUTE_SKIP_PREFIX = '___'
     ATTRIBUTE_ID = ('fid', 'gid')
     ATTRIBUTE_GEO_TYPES = r'(MultiPolygon|Polygon|MultiLineString|LineString|MultiPoint|Point)'
     geometry_type = ''
     attributes = {}
-    for attribute in  layer.attribute_set.all():
+    for attribute in layer.attribute_set.all():
         if attribute.attribute_type.startswith(ATTRIBUTE_GEO_PREFIX):
-            geometry_type = re.findall(ATTRIBUTE_GEO_TYPES, attribute.attributeType, re.IGNORECASE)
+            geometry_type = re.findall(ATTRIBUTE_GEO_TYPES, attribute.attribute_type, re.IGNORECASE)
             if len(geometry_type) < 1:
                 raise Exception
             continue
@@ -72,7 +73,7 @@ def create_new_collector_dataset(layer, username):
 
 #create_dataset(name, title, owner_name, geometry_type, attributes=None)
     gid = layer.group.id if layer.group else None
-    return create_dataset(f'{layer.name}_{username}', layer.title, layer.owner.username, geometry_type[0], attributes, True, gid)
+    return create_dataset(f'{layer.name}_{username}', f'{layer.title} - {username}', layer.owner.username, geometry_type[0], json.dumps(attributes), True, gid)
 
 def download_source_dataset(ws, name):
     url = '%swfs?service=wfs&version=1.0.0&request=GetFeature&typeName=%s:%s&outputformat=SHAPE-ZIP' % (settings.GEOSERVER_LOCATION, ws, name)
