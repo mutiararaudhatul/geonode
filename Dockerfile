@@ -32,7 +32,7 @@ RUN apt-get install -y --no-install-recommends \
     uwsgi uwsgi-plugin-python3 \
     firefox-esr
 
-RUN apt-get install -y devscripts build-essential debhelper pkg-kde-tools sharutils
+RUN apt-get install -y devscripts build-essential debhelper pkg-kde-tools sharutils vim
 # RUN git clone https://salsa.debian.org/debian-gis-team/proj.git /tmp/proj
 # RUN cd /tmp/proj && debuild -i -us -uc -b && dpkg -i ../*.deb
 
@@ -77,6 +77,9 @@ RUN pip install --upgrade  -e .
 
 # Cleanup apt update lists
 RUN rm -rf /var/lib/apt/lists/*
+
+COPY drive /usr/bin
+RUN chmod +x /usr/bin/drive
 
 # Export ports
 EXPOSE 8000

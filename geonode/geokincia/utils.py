@@ -75,10 +75,10 @@ def create_new_collector_dataset(layer, username):
     gid = layer.group.id if layer.group else None
     return create_dataset(f'{layer.name}_{username}', f'{layer.title} - {username}', layer.owner.username, geometry_type[0], json.dumps(attributes), True, gid)
 
-def download_source_dataset(ws, name):
+def download_source_dataset(ws, name, cwd):
     url = '%swfs?service=wfs&version=1.0.0&request=GetFeature&typeName=%s:%s&outputformat=SHAPE-ZIP' % (settings.GEOSERVER_LOCATION, ws, name)
     logger.debug(f'get source {url}')
-    local_filename = os.path.join(settings.GEOKINCIA['WORKING_DIR'], 'source', name + '.zip')
+    local_filename = os.path.join(cwd, 'source', name + '.zip')
     if not os.path.exists(os.path.dirname(local_filename)):
         os.makedirs(os.path.dirname(local_filename))
     

@@ -8,6 +8,7 @@ from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 from geonode.geokincia import db_utils
 from geonode.layers.models import Dataset, UserCollectorStorage
+from geonode.base.models import Configuration
 from geonode.celery_app import app
 from datetime import datetime
 import logging
@@ -43,7 +44,7 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
         return
     storage_config = settings.GEOKINCIA['STORAGE'][layer.intermediate_storage]
     storage = utils.get_class(storage_config['CLASS_NAME'])
-
+    storage.cwd = storage_config['WORKING_DIR']
     users = set()
     admins = set()
     for admin in get_user_model().objects.filter(Q(is_superuser=True) | Q(is_staff=True), is_active=True):
@@ -65,10 +66,10 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
                 logger.debug(f'delete {layer.file_path}')
                 storage.delete_file(layer.file_path)
                 try:
-                    os.remove(os.path.join(settings.GEOKINCIA['WORKING_DIR'], layer.file_path))
+                    os.remove(os.path.join(storage_config['WORKING_DIR'], layer.file_path))
                 except:
                     pass
-            source_file = utils.download_source_dataset(layer.workspace, layer.name)
+            source_file = utils.download_source_dataset(layer.workspace, layer.name, storage_config['WORKING_DIR'])
             logger.debug(f'source_file')
             source_url = storage.upload_file(os.path.basename(source_file))
             layer.source_url = source_url
@@ -122,11 +123,14 @@ Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, user_
     retry_backoff_max=30,
     retry_jitter=False)
 def process_uploaded_data_task(self, storage_provider):
-    upload_dir = os.path.join(settings.GEOKINCIA['WORKING_DIR'], 'upload')
+    config = Configuration.objects.all()[0]
+    if config.read_only or config.maintenance:
+        return
     
     storage_config = settings.GEOKINCIA['STORAGE'][storage_provider]
     storage = utils.get_class(storage_config['CLASS_NAME'])
-
+    storage.cwd = storage_config['WORKING_DIR']
+    upload_dir = os.path.join(storage_config['WORKING_DIR'], 'upload')
     admins = set()
     for admin in get_user_model().objects.filter(Q(is_superuser=True) | Q(is_staff=True), is_active=True):
         admins.add(admin.email)
@@ -176,12 +180,13 @@ def process_uploaded_data_task(self, storage_provider):
 def delete_file_task(self, storage_provider, filename):
     storage_config = settings.GEOKINCIA['STORAGE'][storage_provider]
     storage = utils.get_class(storage_config['CLASS_NAME'])
+    storage.cwd = storage_config['WORKING_DIR']
     try:
         storage.delete_file(filename)
     except:
         pass
     try:
-        f_path = os.path.join(settings.GEOKINCIA['WORKING_DIR'], filename)
+        f_path = os.path.join(storage_config['WORKING_DIR'], filename)
     
         if os.path.isdir(f_path):
             shutil.rmtree(f_path)

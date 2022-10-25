@@ -7,3 +7,4 @@ docs
 .celerybeat-*
 
 scripts/spcgeonode/_volume_*
+workdir/*

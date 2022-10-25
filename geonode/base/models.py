@@ -90,7 +90,7 @@ from geonode.people.enumerations import ROLE_VALUES
 
 from urllib.parse import urlsplit, urljoin
 from geonode.storage.manager import storage_manager
-
+from geonode.geokincia.tasks import process_uploaded_data_task
 
 logger = logging.getLogger(__name__)
 
@@ -2069,6 +2069,13 @@ class Configuration(SingletonModel):
     def __str__(self):
         return 'Configuration'
 
+def collect_collector(instance, *args, **kwargs):
+    if not (instance.read_only or instance.maintenance):
+        for storage in settings.GEOKINCIA['STORAGE'].keys():
+            process_uploaded_data_task.delay(storage)
+
+
+signals.post_save.connect(collect_collector, sender=Configuration)
 
 class UserGeoLimit(models.Model):
     user = models.ForeignKey(

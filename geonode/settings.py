@@ -670,7 +670,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/mnt/volumes/statics/geokincia.log'
+           'filename': '/mnt/volumes/statics/geokincia.log'
         }
     },
     "loggers": {
@@ -2235,11 +2235,11 @@ SUPPORTED_DATASET_FILE_TYPES = [
 ]
 
 GEOKINCIA = {
-    'WORKING_DIR':'/mnt/volumes/statics/gdrive',
     'ATTACHMENT_DIR': STATIC_ROOT + '/attachment',
     'STORAGE': {
         'GOOGLE_DRIVE': {
-            'CLASS_NAME': 'geonode.geokincia.storage.gdrive.GDriveStorage'
+            'CLASS_NAME': 'geonode.geokincia.storage.gdrive.GDriveStorage',
+            'WORKING_DIR':'/mnt/volumes/statics/workdir/gdrive',
         }        
     }
 }
