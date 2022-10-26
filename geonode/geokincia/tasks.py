@@ -131,6 +131,7 @@ def process_uploaded_data_task(self, storage_provider):
     storage = utils.get_class(storage_config['CLASS_NAME'])
     storage.cwd = storage_config['WORKING_DIR']
     upload_dir = os.path.join(storage_config['WORKING_DIR'], 'upload')
+    remote_dir = 'upload'
     admins = set()
     for admin in get_user_model().objects.filter(Q(is_superuser=True) | Q(is_staff=True), is_active=True):
         admins.add(admin.email)
@@ -146,6 +147,7 @@ def process_uploaded_data_task(self, storage_provider):
     for layer_dir in os.listdir(upload_dir):
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
             for uploaded in os.listdir(os.path.join(upload_dir, layer_dir, user_dataset)):
+                remote_path = os.path.join(remote_dir, layer_dir, user_dataset, uploaded)
                 uploaded_path = os.path.join(upload_dir, layer_dir, user_dataset, uploaded)
                 if not uploaded.startswith('___processed_') and os.path.isdir(uploaded_path):
                     try:
@@ -157,11 +159,11 @@ def process_uploaded_data_task(self, storage_provider):
                             elif processed_file.lower().endswith('.shp'):
                                 utils.process_shp(os.path.join(uploaded_path, processed_file), user_dataset, int(layer_dir.split('_')[-1]))
                                 
-                        storage.move(uploaded_path, f'___processed_{uploaded}_success')
+                        storage.rename(remote_path, f'___processed_{uploaded}_success')
                     except:
                         logger.warning(f'fail to processed uploaded dataset')
                         logger.debug(traceback.format_exc())
-                        storage.move(uploaded_path, f'processed_{uploaded}_error')
+                        storage.rename(remote_path, f'___processed_{uploaded}_error')
                         send_mail(f'{storage_provider} Pull dataset gagal ',
                                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 

@@ -17,11 +17,16 @@ VIDEO_EXT = ['.mp4', '.avi']
 
 logger = logging.getLogger(__name__)
 
-def process_attachment(attachment, cwd='.', existing_attachment=''):
+def process_attachment(attachment='', cwd='.', existing_attachment=''):
+    if not attachment or len(attachment.strip()) == 0:
+         return existing_attachment
     new_attachments = []
     attachment_dir = settings.GEOKINCIA['ATTACHMENT_DIR']
-    existing_attachments = existing_attachment.strip().split(';')
-    existing_attachments_files = [att.split('#')[0] for att in existing_attachments]
+    existing_attachments = []
+    existing_attachments_files = []
+    if existing_attachment and len(existing_attachment.strip()) > 0:
+        existing_attachments = existing_attachment.strip().split(';')
+        existing_attachments_files = [att.split('#')[0] for att in existing_attachments]
     for att in attachment.strip().split(','):
         origin = os.path.join(cwd, att.strip())
         base, f = os.path.split(origin)

@@ -3,6 +3,7 @@ from django.conf import settings
 from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.geoserver.createlayer.utils import create_dataset
 from . import db_utils
+from requests.auth import HTTPBasicAuth
 
 import requests
 import importlib
@@ -79,13 +80,15 @@ def download_source_dataset(ws, name, cwd):
     url = '%swfs?service=wfs&version=1.0.0&request=GetFeature&typeName=%s:%s&outputformat=SHAPE-ZIP' % (settings.GEOSERVER_LOCATION, ws, name)
     logger.debug(f'get source {url}')
     local_filename = os.path.join(cwd, 'source', name + '.zip')
+    basic = HTTPBasicAuth(settings.OGC_SERVER['default']['USER'], settings.OGC_SERVER['default']['PASSWORD'])
     if not os.path.exists(os.path.dirname(local_filename)):
         os.makedirs(os.path.dirname(local_filename))
     
-    with requests.get(url, stream=True) as r:
+    with requests.get(url, stream=True, auth=basic) as r:
         r.raise_for_status()
         with open(local_filename, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192): 
-                f.write(chunk)
+                if chunk:
+                    f.write(chunk)
     logger.debug(f'source save to {local_filename}')
     return local_filename
