@@ -43,6 +43,9 @@ def process_csv(csv_file, user, layer_id):
         target_layer = user_collector.intermediate_dataset_name
     logger.debug(f'process_csv use aggregate data')
     db_utils.load_from_csv('datastore', csv_file, target_layer, layer.use_aggregate_data, src_layer)
+    truncate_geoserver_cache(layer.workspace, target_layer)
+    if layer.use_aggregate_data:
+        truncate_geoserver_cache(layer.workspace, layer.name)
 
 def process_shp(shp_file, user, layer_id):
     logger.debug(f'process_shp')
@@ -92,3 +95,25 @@ def download_source_dataset(ws, name, cwd):
                     f.write(chunk)
     logger.debug(f'source save to {local_filename}')
     return local_filename
+
+def truncate_geoserver_cache(ws, name):
+    data = {
+            'seedRequest': {
+                'name': f'{ws}:{name}',
+                'bounds': {
+                    'coords': {
+                        "double": [ 100.258846, -1.140767, 100.508621, -0.706915]
+                    }
+                },
+                'gridSetId': 'EPSG:4326',
+                'zoomStart': 1,
+                'zoomStop': 15,
+                'format': 'image/png',
+                'type': 'truncate',
+                'threadCount': 1,
+            }
+            }
+    url = '%sgwc/rest/seed/%s:%s.json' % (settings.GEOSERVER_LOCATION, ws, name)
+    basic = HTTPBasicAuth(settings.OGC_SERVER['default']['USER'], settings.OGC_SERVER['default']['PASSWORD'])
+    r = requests.post(url, auth=basic, json=data)
+    

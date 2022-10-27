@@ -189,8 +189,6 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None):
     except:
         raise Exception
     header[0] = target_geo['f_geometry_column']
-    index_id = header.index('___id')
-    index_update = header.index('___update')
 
     index_att = None
     name_att = ''
@@ -220,6 +218,8 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None):
         for i in range(len(rows)):
             rows[i][c_index:c_index+1] = []
     index_att = header.index(name_att)
+    index_id = header.index('___id')
+    index_update = header.index('___update')
     header[index_att] = '___att'
 
     empty_table(conn_name, target_table)

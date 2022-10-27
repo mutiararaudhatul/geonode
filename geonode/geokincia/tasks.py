@@ -218,5 +218,6 @@ def merge_dataset_task(self, dataset_id, uc_dataset):
     for intermediate_dataset_name in uc_dataset:
         if intermediate_dataset_name:
             db_utils.copy_table('datastore', intermediate_dataset_name, layer.name)
+    utils.truncate_geoserver_cache(layer.workspace, layer.name)
 
         
