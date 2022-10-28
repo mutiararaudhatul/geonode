@@ -1,8 +1,7 @@
-from os import sync
-from unicodedata import name
 from django.db import connections
 from django.conf import settings
 from datetime import datetime
+from PIL import Image
 
 import re
 import csv
@@ -14,36 +13,48 @@ import logging
 ATTACHMENT = ('attachment', 'Attachment', 'attachments', 'Attachments')
 PHOTO_EXT = ['.png', '.jpg', '.jpeg', '.svg']
 VIDEO_EXT = ['.mp4', '.avi']
+IMG_SIZE = 720
 
 logger = logging.getLogger(__name__)
+
+def resize_image(src):
+    base, f = os.path.split(src)
+    target = os.path.join(settings.GEOKINCIA['ATTACHMENT_DIR'], f)
+    try:
+        with Image.open(src) as img:
+            x, y = img.size
+            ratio = IMG_SIZE / min(x,y)
+            img = img.resize((int(x * ratio), int(y * ratio)))
+            img.save(target, optimize=True, quality=90)
+    except:
+        shutil.copy2(src, settings.GEOKINCIA['ATTACHMENT_DIR'])
 
 def process_attachment(attachment='', cwd='.', existing_attachment=''):
     if not attachment or len(attachment.strip()) == 0:
          return existing_attachment
     new_attachments = []
-    attachment_dir = settings.GEOKINCIA['ATTACHMENT_DIR']
     existing_attachments = []
     existing_attachments_files = []
+    attachment_dir = settings.GEOKINCIA['ATTACHMENT_DIR']
     if existing_attachment and len(existing_attachment.strip()) > 0:
         existing_attachments = existing_attachment.strip().split(';')
         existing_attachments_files = [att.split('#')[0] for att in existing_attachments]
     for att in attachment.strip().split(','):
         origin = os.path.join(cwd, att.strip())
         base, f = os.path.split(origin)
-        target = os.path.join(attachment_dir, f)
         if not f in existing_attachments_files:
             f_prop = f
             _,ext = os.path.splitext(origin)
             if ext in PHOTO_EXT:
                 f_prop += '#photo'
+                resize_image(origin)
             elif ext in VIDEO_EXT:
                 f_prop += '#video'
+                shutil.copy2(origin, attachment_dir)
             else:
                 continue
             stat = os.stat(origin)
             f_prop += f'#{datetime.fromtimestamp(stat.st_atime).strftime("%a %d-%m-%Y")}'
-            if not os.path.exists(target):
-                shutil.copy2(origin, attachment_dir)
             new_attachments.append(f_prop)
     logger.debug(f'process_attachment {";".join(new_attachments + existing_attachments)}')
     return ';'.join(new_attachments + existing_attachments)
@@ -279,8 +290,6 @@ def copy_table(conn_name, src_table, target_table):
         row[index_att] = ';'.join(merge_att + existing_att)
         logger.debug(f'try to update {row}')
         update_row(conn_name, target_table, [target_geo]+columns, row, '___id', row[index_id])
-
-
 
 
 
