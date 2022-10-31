@@ -64,7 +64,9 @@ COPY celery.sh /usr/bin/celery-commands
 RUN chmod +x /usr/bin/celery-commands
 
 COPY celery-cmd /usr/bin/celery-cmd
+COPY celery-beat-cmd /usr/bin/celery-beat-cmd
 RUN chmod +x /usr/bin/celery-cmd
+RUN chmod +x /usr/bin/celery-beat-cmd
 
 # # Install "geonode-contribs" apps
 # RUN cd /usr/src; git clone https://github.com/GeoNode/geonode-contribs.git -b master
