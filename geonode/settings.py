@@ -37,6 +37,8 @@ from geonode import get_version
 from kombu import Queue, Exchange
 from kombu.serialization import register
 
+from celery.schedules import crontab
+
 from . import serializer
 
 SILENCED_SYSTEM_CHECKS = [
@@ -412,6 +414,7 @@ GEONODE_CORE_APPS = (
     'geonode.catalogue',
     'geonode.catalogue.metadataxsl',
     'geonode.harvesting',
+    'geonode.geokincia',
 )
 
 # GeoNode Apps
@@ -1799,9 +1802,7 @@ if USE_GEOSERVER:
 #          'schedule': crontab(hour=16, day_of_week=5),
 #     },
 
-CELERY_BEAT_SCHEDULER = os.environ.get(
-    'CELERY_BEAT_SCHEDULER', "celery.beat:PersistentScheduler")
-CELERY_BEAT_SCHEDULE = {}
+
 
 DELAYED_SECURITY_SIGNALS = ast.literal_eval(os.environ.get('DELAYED_SECURITY_SIGNALS', 'False'))
 CELERY_ENABLE_UTC = ast.literal_eval(os.environ.get('CELERY_ENABLE_UTC', 'True'))
@@ -2234,8 +2235,18 @@ SUPPORTED_DATASET_FILE_TYPES = [
     }
 ]
 
+CELERY_BEAT_SCHEDULER = os.environ.get(
+    'CELERY_BEAT_SCHEDULER', "celery.beat:PersistentScheduler")
+CELERY_BEAT_SCHEDULE = {
+    'check_upload': {
+        "task": "geonode.geokincia.dataset.check_upload",
+        "schedule": crontab(minute="*/3"),
+    },
+}
+
 GEOKINCIA = {
     'ATTACHMENT_DIR': STATIC_ROOT + '/attachment',
+    'MAX_SECONDS_DOWNLOAD_WAIT': 3600,
     'STORAGE': {
         'GOOGLE_DRIVE': {
             'CLASS_NAME': 'geonode.geokincia.storage.gdrive.GDriveStorage',

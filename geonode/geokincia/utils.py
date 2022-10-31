@@ -4,6 +4,7 @@ from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.geoserver.createlayer.utils import create_dataset
 from . import db_utils
 from requests.auth import HTTPBasicAuth
+from datetime import date, datetime
 
 import requests
 import importlib
@@ -12,8 +13,14 @@ import re
 import os
 import logging
 import json
+import csv
 
 logger = logging.getLogger(__name__)
+
+ATTACHMENT = ('attachment', 'Attachment', 'attachments', 'Attachments')
+
+class AttachmentNotFound(Exception):
+    pass
 
 def get_class(full_class_name):
     module_name = full_class_name[:full_class_name.rfind('.')]
@@ -21,6 +28,30 @@ def get_class(full_class_name):
     module = importlib.import_module(module_name)
     init_class =  getattr(module, class_name)
     return init_class()
+
+def all_attachment_exists(csv_file):
+    dirname = os.path.dirname(csv_file)
+    with open(csv_file, 'r') as f:
+        processed_csv = csv.reader(f, dialect='excel')
+        header = next(processed_csv)
+        name_att = ''
+        for i in range(len(header)):
+            if header[i] in ATTACHMENT:
+                name_att = header[i]
+                break
+            if not name_att:
+                return
+            index_att = header.index(name_att)
+            for r in processed_csv:
+                for att_f in r[index_att].split(','):
+                    if not os.path.exists(os.path.join(dirname, att_f)):
+                        logger.info(f'att check {os.path.join(dirname, att_f)} not found')
+                        raise AttachmentNotFound
+    return True
+
+def add_time_check(csv_file):
+    with open(os.path.join(os.path.dirname(csv_file), '.gn-timecheck', 'w')) as f:
+        f.write(str(int(datetime.now().timestamp())))
 
 def process_csv(csv_file, user, layer_id):
     logger.debug(f'process_csv')
@@ -47,13 +78,12 @@ def process_csv(csv_file, user, layer_id):
     if layer.use_aggregate_data:
         truncate_geoserver_cache(layer.workspace, layer.name)
 
-def process_shp(shp_file, user, layer_id):
+def process_shp(shp_file):
     logger.debug(f'process_shp')
     s = subprocess.run(f'ogr2ogr -f CSV -overwrite out.csv {os.path.basename(shp_file)} -lco GEOMETRY=AS_WKT', capture_output=True, cwd=os.path.dirname(shp_file), shell=True)
     if s.returncode != 0:
         logger.debug(f'fail conver shp to csv {s.stderr} {s.stdout}')
         raise Exception
-    process_csv(os.path.join(os.path.dirname(shp_file), 'out.csv'), user, layer_id)
 
 
 def create_new_collector_dataset(layer, username):

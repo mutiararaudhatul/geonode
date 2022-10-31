@@ -112,6 +112,23 @@ Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, user_
 
 @app.task(
     bind=True,
+    name='geokincia.dataset.check_upload',
+    queue='cleanup',
+    expires=600,
+    time_limit=600,
+    acks_late=False,
+    autoretry_for=(Exception, ),
+    retry_kwargs={'max_retries': 5},
+    retry_backoff=3,
+    retry_backoff_max=30,
+    retry_jitter=False)
+def check_and_process_data_taskk(self):
+    storage_config = settings.GEOKINCIA['STORAGE']
+    for storage_provider in storage_config.keys():
+        process_uploaded_data_task.delay(storage_provider)    
+
+@app.task(
+    bind=True,
     name='geokincia.dataset.upload',
     queue='cleanup',
     expires=600,
@@ -151,14 +168,39 @@ def process_uploaded_data_task(self, storage_provider):
                 uploaded_path = os.path.join(upload_dir, layer_dir, user_dataset, uploaded)
                 if not uploaded.startswith('___processed_') and os.path.isdir(uploaded_path):
                     try:
-                        csv_shp = list(filter(lambda f: f.lower().endswith('.csv') or f.lower().endswith('.shp'), os.listdir(uploaded_path)))
-                        processed_file = csv_shp.pop() if csv_shp else ''
-                        if os.path.isfile(os.path.join(uploaded_path, processed_file)):
-                            if processed_file.lower().endswith('.csv'):
-                                utils.process_csv(os.path.join(uploaded_path, processed_file), user_dataset, int(layer_dir.split('_')[-1]))
-                            elif processed_file.lower().endswith('.shp'):
-                                utils.process_shp(os.path.join(uploaded_path, processed_file), user_dataset, int(layer_dir.split('_')[-1]))
-                                
+                        csv = list(filter(lambda f: f.lower().endswith('.csv'), os.listdir(uploaded_path)))
+                        if len(csv) > 0:
+                            csv_file = os.path.join(uploaded_path, csv[0])
+                            logger.info(f'csv {csv_file}')
+                        else:
+                            shp = list(filter(lambda f: f.lower().endswith('.shp'), os.listdir(uploaded_path)))
+                            if len(shp) > 0:
+                                utils.process_shp(os.path.join(uploaded_path, shp[0]))
+                                logger.info(f'shp {shp[0]}')
+                                csv_file = os.path.join(uploaded_path, 'out.csv')
+                                logger.info(f'shp to csv {csv_file}')
+                            else:
+                                #download not complte. skipping
+                                return
+
+                        if os.path.exists(os.path.join(uploaded_path, '.gn-timecheck')):
+                            with open(os.path.join(uploaded_path, '.gn-timecheck'), 'r') as cf:
+                                try:
+                                    control = int(cf.readline().strip())
+                                    td = datetime.now() - datetime.fromtimestamp(control)
+                                    if td.total_seconds() < settings.GEOKINCIA['MAX_SECONDS_DOWNLOAD_WAIT']:
+                                        utils.all_attachment_exists(csv_file)
+                                except:
+                                    utils.add_time_check(csv_file)
+                                    return
+                        else:
+                            try:
+                                utils.all_attachment_exists(csv_file)
+                            except:
+                                utils.add_time_check(csv_file)
+                                return
+
+                        utils.process_csv(csv_file, user_dataset, int(layer_dir.split('_')[-1]))
                         storage.rename(remote_path, f'___processed_{uploaded}_success')
                     except:
                         logger.warning(f'fail to processed uploaded dataset')
@@ -220,4 +262,3 @@ def merge_dataset_task(self, dataset_id, uc_dataset):
             db_utils.copy_table('datastore', intermediate_dataset_name, layer.name)
     utils.truncate_geoserver_cache(layer.workspace, layer.name)
 
-        

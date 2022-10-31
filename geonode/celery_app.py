@@ -37,26 +37,26 @@ app.config_from_object('django.conf:settings', namespace="CELERY")
 app.autodiscover_tasks()
 app.autodiscover_tasks(packages=["geonode.harvesting.harvesters"])
 
-""" CELERAY SAMPLE TASKS
-@app.on_after_configure.connect
-def setup_periodic_tasks(sender, **kwargs):
-    # Calls test('hello') every 10 seconds.
-    sender.add_periodic_task(10.0, test.s('hello'), name='add every 10')
+""" CELERAY SAMPLE TASKS"""
+# @app.on_after_configure.connect
+# def setup_periodic_tasks(sender, **kwargs):
+#     # Calls test('hello') every 10 seconds.
+#     sender.add_periodic_task(10.0, test.s('hello'), name='add every 10')
 
-    # Calls test('world') every 30 seconds
-    sender.add_periodic_task(30.0, test.s('world'), expires=10)
+#     # Calls test('world') every 30 seconds
+#     sender.add_periodic_task(30.0, test.s('world'), expires=10)
 
-@app.task(
-    bind=True,
-    name='{{project_name}}.test',
-    queue='default')
-def test(arg):
-    _log(arg)
+# @app.task(
+#     bind=True,
+#     name='{{project_name}}.test',
+#     queue='default')
+# def test(arg):
+#     _log(arg)
 
-@app.task(
-    bind=True,
-    name='{{project_name}}.debug_task',
-    queue='default')
-def debug_task(self):
-    _log(f"Request: {self.request}")
-"""
+# @app.task(
+#     bind=True,
+#     name='{{project_name}}.debug_task',
+#     queue='default')
+# def debug_task(self):
+#     _log(f"Request: {self.request}")
+
