@@ -108,24 +108,6 @@ Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, user_
                 logger.debug(traceback.format_exc())
                 send_mail(f'Project {layer.title}: Gagal Buat Upload Folder',
                 f'Gagal membuat upload folder untuk project {layer.title} user {user_collector.user.username}', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
-            
-
-@app.task(
-    bind=True,
-    name='geokincia.dataset.check_upload',
-    queue='cleanup',
-    expires=600,
-    time_limit=600,
-    acks_late=False,
-    autoretry_for=(Exception, ),
-    retry_kwargs={'max_retries': 5},
-    retry_backoff=3,
-    retry_backoff_max=30,
-    retry_jitter=False)
-def check_and_process_data_taskk(self):
-    storage_config = settings.GEOKINCIA['STORAGE']
-    for storage_provider in storage_config.keys():
-        process_uploaded_data_task.delay(storage_provider)    
 
 @app.task(
     bind=True,
@@ -140,10 +122,6 @@ def check_and_process_data_taskk(self):
     retry_backoff_max=30,
     retry_jitter=False)
 def process_uploaded_data_task(self, storage_provider):
-    config = Configuration.objects.all()[0]
-    if config.read_only or config.maintenance:
-        return
-    
     storage_config = settings.GEOKINCIA['STORAGE'][storage_provider]
     storage = utils.get_class(storage_config['CLASS_NAME'])
     storage.cwd = storage_config['WORKING_DIR']
@@ -188,10 +166,10 @@ def process_uploaded_data_task(self, storage_provider):
                                 try:
                                     control = int(cf.readline().strip())
                                     td = datetime.now() - datetime.fromtimestamp(control)
-                                    if td.total_seconds() < settings.GEOKINCIA['MAX_SECONDS_DOWNLOAD_WAIT']:
+                                    if td.total_seconds() < int(settings.GEOKINCIA['MAX_SECONDS_DOWNLOAD_WAIT']):
                                         utils.all_attachment_exists(csv_file)
                                 except:
-                                    utils.add_time_check(csv_file)
+                                    #utils.add_time_check(csv_file)
                                     return
                         else:
                             try:
@@ -208,6 +186,28 @@ def process_uploaded_data_task(self, storage_provider):
                         storage.rename(remote_path, f'___processed_{uploaded}_error')
                         send_mail(f'{storage_provider} Pull dataset gagal ',
                                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
+
+@app.task(
+    bind=True,
+    name='geokincia.dataset.check_upload',
+    queue='cleanup',
+    expires=600,
+    time_limit=600,
+    acks_late=False,
+    autoretry_for=(Exception, ),
+    retry_kwargs={'max_retries': 5},
+    retry_backoff=3,
+    retry_backoff_max=30,
+    retry_jitter=False)
+def check_and_process_data_taskk(self):
+    config = Configuration.objects.all()[0]
+    if config.read_only or config.maintenance:
+        return
+    storage_config = settings.GEOKINCIA['STORAGE']
+    for dataset in Dataset.objects.filter(is_data_collector=True, intermediate_storage__in=list(storage_config.keys())):
+        logger.debug(f'schedule checking: {dataset.name}')
+        if dataset.user_collector.count() > 0:
+            process_uploaded_data_task.delay(dataset.intermediate_storage)
 
 @app.task(
     bind=True,

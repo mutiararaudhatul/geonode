@@ -20,4 +20,7 @@ until PGPASSWORD=${GEONODE_GEODATABASE_PASSWORD} psql -h "$host" -U ${GEONODE_GE
   sleep 1
 done
 
+
+PGPASSWORD=${GEONODE_GEODATABASE_PASSWORD} psql -h "$host" -U ${GEONODE_GEODATABASE} -d ${GEONODE_GEODATABASE} -P "pager=off" -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
 >&2 echo "GeoNode databases are up - executing command"

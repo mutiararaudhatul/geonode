@@ -80,7 +80,9 @@ def process_csv(csv_file, user, layer_id):
 
 def process_shp(shp_file):
     logger.debug(f'process_shp')
-    s = subprocess.run(f'ogr2ogr -f CSV -overwrite out.csv {os.path.basename(shp_file)} -lco GEOMETRY=AS_WKT', capture_output=True, cwd=os.path.dirname(shp_file), shell=True)
+    if os.path.exists(os.path.join(os.path.dirname(shp_file), 'out.csv')):
+        os.remove(os.path.join(os.path.dirname(shp_file), 'out.csv'))
+    s = subprocess.run(f'ogr2ogr -f CSV -overwrite out.csv {os.path.basename(shp_file)} -lco GEOMETRY=AS_WKT -t_srs "EPSG:4326"', capture_output=True, cwd=os.path.dirname(shp_file), shell=True)
     if s.returncode != 0:
         logger.debug(f'fail conver shp to csv {s.stderr} {s.stdout}')
         raise Exception

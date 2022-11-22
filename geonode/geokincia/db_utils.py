@@ -170,7 +170,7 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
     elif target_geom[0] != 'MULTI' and src_geom[0] == 'MULTI':
         return list(map(_to_single, rows))
 
-def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None):
+def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is_init=False):
     rows = []
     header = []
     with open(csv_file, 'r') as f:
@@ -232,17 +232,22 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None):
     index_id = header.index('___id')
     index_update = header.index('___update')
     header[index_att] = '___att'
-
-    empty_table(conn_name, target_table)
-
     basedir = os.path.dirname(csv_file)
+
     logger.debug(f'final header {header}')
-    if is_sync:
-        inserted_rows = list(filter(lambda r: not r[index_id], rows))
-        updated_rows = list(filter(lambda r: r[index_id] and r[index_update], rows))
-    else:
-        inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update], rows))
+
+    if is_init:
+        inserted_rows = rows
         updated_rows = []
+    else:
+        empty_table(conn_name, target_table)
+
+        if is_sync:
+            inserted_rows = list(filter(lambda r: not r[index_id], rows))
+            updated_rows = list(filter(lambda r: r[index_id] and r[index_update], rows))
+        else:
+            inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update], rows))
+            updated_rows = []
 
     for row in inserted_rows:
         row[index_att] = process_attachment(row[index_att], basedir)

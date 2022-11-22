@@ -673,7 +673,8 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-           'filename': '/mnt/volumes/statics/geokincia.log'
+           'filename': '/mnt/volumes/statics/geokincia.log',
+           'formatter': '%(asctime)s %(levelname)s %(message)s'
         }
     },
     "loggers": {
@@ -2246,7 +2247,7 @@ CELERY_BEAT_SCHEDULE = {
 
 GEOKINCIA = {
     'ATTACHMENT_DIR': STATIC_ROOT + '/attachment',
-    'MAX_SECONDS_DOWNLOAD_WAIT': 3600,
+    'MAX_SECONDS_DOWNLOAD_WAIT': 7200,
     'STORAGE': {
         'GOOGLE_DRIVE': {
             'CLASS_NAME': 'geonode.geokincia.storage.gdrive.GDriveStorage',
