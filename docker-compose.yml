@@ -54,6 +54,17 @@ services:
     entrypoint: ["/usr/src/geonode/entrypoint.sh"]
     command: "celery-cmd"
 
+  beat:
+    << : *default-common-django
+    image: geonode/geonode:4.0-dprkpp
+    container_name: beat4${COMPOSE_PROJECT_NAME}
+    depends_on:
+      - django
+    environment:
+      - IS_CELERY=True
+    entrypoint: ["/usr/src/geonode/entrypoint.sh"]
+    command: "sh ./celery-beat-cmd"
+    
   # Nginx is serving django static and media files and proxies to django and geonode
   geonode:
     image: geonode/nginx:4.0
