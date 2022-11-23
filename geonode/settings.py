@@ -651,7 +651,7 @@ LOGGING = {
                       '%(thread)d %(message)s'
         },
         'simple': {
-            'format': '%(message)s',
+            'format': '%(asctime)s %(levelname)s %(message)s',
         },
     },
     'filters': {
@@ -674,7 +674,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
            'filename': '/mnt/volumes/statics/geokincia.log',
-           'formatter': '%(asctime)s %(levelname)s %(message)s'
+           'formatter': 'simple'
         }
     },
     "loggers": {
