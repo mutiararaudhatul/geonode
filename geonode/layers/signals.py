@@ -24,9 +24,9 @@ def delete_dataset(sender, instance, *args, **kwargs):
     if instance.is_data_collector and instance.source_url:
         delete_file_task.delay(instance.intermediate_storage, instance.file_path)
 
-@receiver(post_save, sender=Configuration)
-def collect_collector(sender, instance, *args, **kwargs):
-    if not (instance.read_only or instance.maintenance):
-        for storage in settings.GEOKINCIA['STORAGE'].keys():
-            process_uploaded_data_task.delay(storage)
+# @receiver(post_save, sender=Configuration)
+# def collect_collector(sender, instance, *args, **kwargs):
+#     if not (instance.read_only or instance.maintenance):
+#         for storage in settings.GEOKINCIA['STORAGE'].keys():
+#             process_uploaded_data_task.delay(storage)
 
