@@ -9,8 +9,11 @@ from django.contrib.auth import get_user_model
 from geonode.geokincia import db_utils
 from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.base.models import Configuration
+from geonode.layers.tasks import delete_dataset
 from geonode.celery_app import app
 from datetime import datetime
+from pathlib import Path
+
 import logging
 from . import utils
 
@@ -179,35 +182,38 @@ def process_uploaded_data_task(self, storage_provider):
                                 return
 
                         utils.process_csv(csv_file, user_dataset, int(layer_dir.split('_')[-1]))
-                        storage.rename(remote_path, f'___processed_{uploaded}_success')
+                        storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')
                     except:
                         logger.warning(f'fail to processed uploaded dataset')
                         logger.debug(traceback.format_exc())
-                        storage.rename(remote_path, f'___processed_{uploaded}_error')
+                        storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_error')
                         send_mail(f'{storage_provider} Pull dataset gagal ',
                                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
 @app.task(
     bind=True,
     name='geokincia.dataset.check_upload',
-    queue='cleanup',
-    expires=600,
-    time_limit=600,
-    acks_late=False,
-    autoretry_for=(Exception, ),
-    retry_kwargs={'max_retries': 5},
-    retry_backoff=3,
-    retry_backoff_max=30,
-    retry_jitter=False)
+    queue='cleanup')
 def check_and_process_data_taskk(self):
     config = Configuration.objects.all()[0]
     if config.read_only or config.maintenance:
         return
+    if not os.path.exists('.check_lock'):
+        Path('.check_lock').touch()
+    else:
+        logger.debug('Checker already running')
+        return
+    
     storage_config = settings.GEOKINCIA['STORAGE']
-    for dataset in Dataset.objects.filter(is_data_collector=True, intermediate_storage__in=list(storage_config.keys())):
-        logger.debug(f'schedule checking: {dataset.name}')
-        if dataset.user_collector.count() > 0:
-            process_uploaded_data_task.delay(dataset.intermediate_storage)
+
+    try:
+        for dataset in Dataset.objects.filter(is_data_collector=True, intermediate_storage__in=list(storage_config.keys())):
+            logger.debug(f'schedule checking: {dataset.name}')
+            if dataset.user_collector.count() > 0:
+                process_uploaded_data_task.delay(dataset.intermediate_storage)
+        os.remove('.check_lock')
+    except:
+        pass
 
 @app.task(
     bind=True,
@@ -260,5 +266,6 @@ def merge_dataset_task(self, dataset_id, uc_dataset):
     for intermediate_dataset_name in uc_dataset:
         if intermediate_dataset_name:
             db_utils.copy_table('datastore', intermediate_dataset_name, layer.name)
+            delete_dataset.delay(intermediate_dataset_name)
     utils.truncate_geoserver_cache(layer.workspace, layer.name)
 

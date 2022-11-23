@@ -2240,7 +2240,7 @@ CELERY_BEAT_SCHEDULER = os.environ.get(
     'CELERY_BEAT_SCHEDULER', "celery.beat:PersistentScheduler")
 CELERY_BEAT_SCHEDULE = {
     'check_upload': {
-        "task": "geonode.geokincia.dataset.check_upload",
+        "task": "geokincia.dataset.check_upload",
         "schedule": crontab(minute="*/3"),
     },
 }

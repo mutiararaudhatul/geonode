@@ -42,19 +42,19 @@ BBOX = [ 100.258846, -1.140767, 100.508621, -0.706915]
 DATA_QUALITY_MESSAGE = "Created with GeoPortal @ DPRKPP Padang"
 
 
-def create_dataset(name, title, owner_name, geometry_type, attributes=None, is_collector_dataset=False, group=None):
+def create_dataset(name, title, owner_name, geometry_type, attributes=None, is_collector_dataset=False, group=None, is_slug=True):
     """
     Create an empty layer in GeoServer and register it in GeoNode.
     """
     # first validate parameters
-    if geometry_type not in ('Point', 'LineString', 'Polygon'):
+    if geometry_type not in ('Point', 'LineString', 'Polygon', 'MultiLineString', 'MultiPolygon', 'MultiPoint'):
         msg = 'geometry must be Point, LineString or Polygon'
         logger.error(msg)
         raise GeoNodeException(msg)
     name = get_valid_name(name)
     # we can proceed
     logger.debug('Creating the layer in GeoServer')
-    workspace, datastore = create_gs_dataset(name, title, geometry_type, attributes)
+    workspace, datastore = create_gs_dataset(name, title, geometry_type, attributes, is_slug)
     logger.debug('Creating the layer in GeoNode')
     return create_gn_dataset(workspace, datastore, name, title, owner_name, is_collector_dataset, group)
 
@@ -96,7 +96,7 @@ def create_gn_dataset(workspace, datastore, name, title, owner_name, is_collecto
     return layer
 
 
-def get_attributes(geometry_type, json_attrs=None):
+def get_attributes(geometry_type, json_attrs=None, is_slug=True):
     """
     Convert a json representation of attributes to a Python representation.
 
@@ -135,7 +135,10 @@ def get_attributes(geometry_type, json_attrs=None):
         jattrs = json.loads(json_attrs)
         for jattr in jattrs.items():
             lattr = []
-            attr_name = slugify(jattr[0])
+            if is_slug:
+                attr_name = slugify(jattr[0])
+            else:
+                attr_name = jattr[0]
             attr_type = jattr[1].lower()
             if len(attr_name) == 0:
                 msg = f'You must provide an attribute name for attribute of type {attr_type}'
@@ -165,7 +168,7 @@ def get_or_create_datastore(cat, workspace=None, charset="UTF-8"):
     return ds
 
 
-def create_gs_dataset(name, title, geometry_type, attributes=None):
+def create_gs_dataset(name, title, geometry_type, attributes=None, is_slug=True):
     """
     Create an empty PostGIS layer in GeoServer with a given name, title,
     geometry_type and attributes.
@@ -194,7 +197,7 @@ def create_gs_dataset(name, title, geometry_type, attributes=None):
             logger.error(msg)
             raise GeoNodeException(msg)
 
-    attributes = get_attributes(geometry_type, attributes)
+    attributes = get_attributes(geometry_type, attributes, is_slug)
     attributes_block = "<attributes>"
     for spec in attributes:
         att_name, binding, opts = spec

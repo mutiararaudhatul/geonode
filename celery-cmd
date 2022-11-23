@@ -19,4 +19,4 @@ $CELERY_BIN -A $CELERY_APP worker --autoscale=$CELERY__AUTOSCALE_VALUES \
     --max-memory-per-child=$CELERY__MAX_MEMORY_PER_CHILD $CELERY__OPTS \
     --statedb=$CELERY__STATE_DB --scheduler=$CELERY__BEAT_SCHEDULE \
     --loglevel=$CELERY__LOG_LEVEL -n $CELERY__WORKER_NAME -f $CELERY__LOG_FILE \
-    --concurrency=$CELERY__WORKER_CONCURRENCY --max-tasks-per-child=$CELERY__MAX_TASKS_PER_CHILD
+    --concurrency=$CELERY__WORKER_CONCURRENCY --max-tasks-per-child=$CELERY__MAX_TASKS_PER_CHILD -B

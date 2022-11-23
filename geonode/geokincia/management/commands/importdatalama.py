@@ -39,7 +39,7 @@ class Command(BaseCommand):
                     except:
                         pass
                     print(row[field])
-                    if not os.path.exists(row[field]):
+                    if not os.path.exists(os.path.join(att_path, row[field])):
                         print(f'file {row[field]} does not exist')
                     new_att.append(os.path.join(att_path, row[field]))
             for field in fields:
@@ -54,7 +54,7 @@ class Command(BaseCommand):
             for row in rows:
                 writer.writerow(row)
 
-        db_utils.load_from_csv('datastore', os.path.join(os.path.dirname(source), '___out2.csv'), target, False, True)
+        db_utils.load_from_csv('datastore', os.path.join(os.path.dirname(source), '___out2.csv'), target, False, None, True)
 
     def _process_shp(self, source, target, att_path):
         if os.path.exists(source + '.csv'):

@@ -89,7 +89,7 @@ def process_shp(shp_file):
 
 
 def create_new_collector_dataset(layer, username):
-    ATTRIBUTE_TYPE_MAPPING = {'xsd:string': 'string', 'xsd:int': 'integer', 'xsd:float': 'float', 'xsd:dateTime': 'date'}
+    ATTRIBUTE_TYPE_MAPPING = {'xsd:string': 'string', 'xsd:int': 'integer', 'xsd:float': 'float', 'xsd:dateTime': 'date', 'xsd:double': 'float', 'xsd:date': 'date'}
     ATTRIBUTE_GEO_PREFIX = 'gml:'
     ATTRIBUTE_SKIP_PREFIX = '___'
     ATTRIBUTE_ID = ('fid', 'gid')
@@ -109,7 +109,7 @@ def create_new_collector_dataset(layer, username):
 
 #create_dataset(name, title, owner_name, geometry_type, attributes=None)
     gid = layer.group.id if layer.group else None
-    return create_dataset(f'{layer.name}_{username}', f'{layer.title} - {username}', layer.owner.username, geometry_type[0], json.dumps(attributes), True, gid)
+    return create_dataset(f'{layer.name}_{username}', f'{layer.title} - {username}', layer.owner.username, geometry_type[0], json.dumps(attributes), True, gid, False)
 
 def download_source_dataset(ws, name, cwd):
     url = '%swfs?service=wfs&version=1.0.0&request=GetFeature&typeName=%s:%s&outputformat=SHAPE-ZIP' % (settings.GEOSERVER_LOCATION, ws, name)
@@ -129,23 +129,8 @@ def download_source_dataset(ws, name, cwd):
     return local_filename
 
 def truncate_geoserver_cache(ws, name):
-    data = {
-            'seedRequest': {
-                'name': f'{ws}:{name}',
-                'bounds': {
-                    'coords': {
-                        "double": [ 100.258846, -1.140767, 100.508621, -0.706915]
-                    }
-                },
-                'gridSetId': 'EPSG:4326',
-                'zoomStart': 1,
-                'zoomStop': 15,
-                'format': 'image/png',
-                'type': 'truncate',
-                'threadCount': 1,
-            }
-            }
-    url = '%sgwc/rest/seed/%s:%s.json' % (settings.GEOSERVER_LOCATION, ws, name)
+    data = f'<truncateLayer><layerName>{ws}:{name}</layerName></truncateLayer>'
+    url = '%sgwc/rest/masstruncate'  % (settings.GEOSERVER_LOCATION,)
     basic = HTTPBasicAuth(settings.OGC_SERVER['default']['USER'], settings.OGC_SERVER['default']['PASSWORD'])
-    r = requests.post(url, auth=basic, json=data)
+    r = requests.post(url, auth=basic, data=data)
     

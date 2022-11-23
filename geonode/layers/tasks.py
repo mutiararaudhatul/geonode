@@ -65,6 +65,6 @@ def delete_dataset_by_id_or_name(dataset_id_or_name):
         ds_names = [ uc.intermediate_dataset_name for uc in UserCollectorStorage.objects.filter(dataset=layer) ]
         collector_ds = Dataset.objects.filter(name__in=ds_names)
         for ds in collector_ds:
-            resource_manager.delete(instance=ds)        
+            resource_manager.delete(ds.uuid)        
         logger.debug(f'Deleting Collector dataset Dataset {layer}')
-    resource_manager.delete(uuid=layer.uuid, instance=layer)
+    resource_manager.delete(layer.uuid)

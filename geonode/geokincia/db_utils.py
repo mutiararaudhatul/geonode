@@ -36,6 +36,8 @@ def process_attachment(attachment='', cwd='.', existing_attachment=''):
     existing_attachments = []
     existing_attachments_files = []
     attachment_dir = settings.GEOKINCIA['ATTACHMENT_DIR']
+    if not os.path.exists(attachment_dir):
+        os.makedirs(attachment_dir)
     if existing_attachment and len(existing_attachment.strip()) > 0:
         existing_attachments = existing_attachment.strip().split(';')
         existing_attachments_files = [att.split('#')[0] for att in existing_attachments]
@@ -83,7 +85,7 @@ def execute_query(conn_name, query, params, is_return, is_dict=True):
                 return cursor.fetchall()
 
 def empty_table(conn_name, table):
-    q = f'delete from {table}'
+    q = f'delete from "{table}"'
     execute_query(conn_name, q, None, False)
 
 def get_column_name(conn_name, table_name):
@@ -104,7 +106,7 @@ def get_primary_key(conn_name, table_name):
         FROM   pg_index i
         JOIN   pg_attribute a ON a.attrelid = i.indrelid
                             AND a.attnum = ANY(i.indkey)
-        WHERE  i.indrelid = '%s'::regclass
+        WHERE  i.indrelid = '"%s"'::regclass
         AND    i.indisprimary;''' % table_name
     pr = execute_query(conn_name, q, None, True)
     return pr[0]['attname']
@@ -122,10 +124,10 @@ def insert_row(conn_name, table_name, colums, values, add_multi=None, target_geo
 def update_row(conn_name, table_name, columns, values, col_id, col_id_value, add_multi=None, target_geo='', geo_value=''):
     update_values = []
     for i in range(len(columns)):
-        value = "null" if values[i] is None else "\"%s\"='%s'" % (columns[i], values[i])
+        value = f'"{columns[i]}"=null' if values[i] is None else "\"%s\"='%s'" % (columns[i], values[i])
         update_values.append(value)
 
-    q = "update %s set %s where \"%s\"='%s' " % (table_name, ','.join(update_values), col_id, col_id_value)
+    q = "update \"%s\" set %s where \"%s\"='%s' " % (table_name, ','.join(update_values), col_id, col_id_value)
     if add_multi:
         q = q + '"%s" = st_multi(st\'%s\')' % (target_geo, geo_value)
     execute_query(conn_name, q, None, False)
@@ -212,7 +214,10 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     target_columns.append(name_att)
     remove_columns = []
     remove_columns.append(header.index('___att'))
-    remove_columns.append(header.index(get_primary_key(conn_name, target_table)))
+    try:
+        remove_columns.append(header.index(get_primary_key(conn_name, target_table)))
+    except:
+        pass
     target_columns.insert(index_geom, header[0])
     for column in header:
         if not column in target_columns:
@@ -268,8 +273,6 @@ def copy_table(conn_name, src_table, target_table):
     target_primary_index = columns.index(get_primary_key(conn_name, target_table))
     columns[target_primary_index:target_primary_index+1] = []
     target_geo = get_geom_column(conn_name, target_table)['f_geometry_column']
-    target_geo_index = columns[target_geo]
-    columns[target_geo_index:target_geo_index+1]
     index_att = columns.index('___att')
     index_id = columns.index('___id')
     src_geo = get_geom_column(conn_name, src_table)['f_geometry_column']
@@ -282,7 +285,7 @@ def copy_table(conn_name, src_table, target_table):
     
     execute_query(conn_name, q, None, False)
 
-    q = '''select "%s",%s from %s where "___id" <> '' and "___update" <> '' ''' % \
+    q = '''select "%s",%s from "%s" where "___id" <> '' and "___update" <> '' ''' % \
         (src_geo, ','.join(quote_columns), src_table)
     for row in execute_query(conn_name, q, None, True, False):
         existing_att_field = execute_query(conn_name,

@@ -517,7 +517,7 @@ span.grippy::after {
             </div>
             <div class="col-xs-12 col-lg-5">
               {% block data_collector %}
-              {% if dataset_form.is_collector_dataset is not True %}
+              {% if dataset.is_collector_dataset == False %}
               <style>
                 .uc_select{
                 height: 200px;
