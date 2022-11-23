@@ -44,6 +44,8 @@ def process_attachment(attachment='', cwd='.', existing_attachment=''):
     for att in attachment.strip().split(','):
         origin = os.path.join(cwd, att.strip())
         base, f = os.path.split(origin)
+        if not os.path.exists(origin):
+            continue
         if not f in existing_attachments_files:
             f_prop = f
             _,ext = os.path.splitext(origin)
@@ -277,19 +279,18 @@ def copy_table(conn_name, src_table, target_table):
     index_id = columns.index('___id')
     src_geo = get_geom_column(conn_name, src_table)['f_geometry_column']
     quote_columns = [ f'"{c}"' for c in columns]
-    quote_columns.remove('"___id"')
 
-    q = '''insert into "%s"("%s","___id", %s) select "%s",uuid_generate_v4(),%s from "%s" 
-    where ("___id" = '') is not false and ("___update" = '') is not false''' % \
-        (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), src_table)
-    
-    execute_query(conn_name, q, None, False)
-
-    q = '''select "%s",%s from "%s" where "___id" <> '' and "___update" <> '' ''' % \
-        (src_geo, ','.join(quote_columns), src_table)
-    for row in execute_query(conn_name, q, None, True, False):
-        existing_att_field = execute_query(conn_name,
-                'select "___att" from "%s" where "___id"=\'%s\'' % (src_table, row[index_id]), None, True)
+    #update
+    q = '''select %s, "%s" from "%s" where "___id" <> '' ''' % \
+        (','.join(quote_columns), src_geo, src_table)
+    for row in execute_query(conn_name, q, None, False):
+        try:
+            existing_att_field = execute_query(conn_name,
+                    'select "___att" from "%s" where "___id"=\'%s\'' % (target_table, row[index_id]), None, True)[0]['___att']
+            existing_att_field = existing_att.strip()
+        except:
+            logger.debug(f'current record or att not found {row[index_id]}')
+            continue
 
         existing_att = [att for att in existing_att_field.split(';')]
         new_att = [att for att in row[index_att].split(';')]
@@ -297,7 +298,17 @@ def copy_table(conn_name, src_table, target_table):
 
         row[index_att] = ';'.join(merge_att + existing_att)
         logger.debug(f'try to update {row}')
-        update_row(conn_name, target_table, [target_geo]+columns, row, '___id', row[index_id])
+        update_row(conn_name, target_table, columns + [target_geo], row, '___id', row[index_id])
 
+    #insert
+    quote_columns.remove('"___id"')
+    q = '''insert into "%s"("%s","___id", %s) select "%s",uuid_generate_v4(),%s from "%s" 
+    where ("___id" = '') is not false ''' % \
+        (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), src_table)
+    
+    execute_query(conn_name, q, None, False)
+    logger.debug(f'finish merge')
+
+    
 
 

@@ -808,6 +808,9 @@ def dataset_metadata(
                     delete_dataset.delay(list(filter(lambda c: c not in new_uc_ds, uc_dataset)))
             elif uc_dataset and not dataset_form.cleaned_data.get('not_merge'):
                 merge_dataset_task.delay(layer.id, uc_dataset)
+            elif uc_dataset and dataset_form.cleaned_data.get('not_merge'):
+                for ds in uc_dataset:
+                    delete_dataset.delay(ds)
 
         return HttpResponse(json.dumps({'message': message}))
 

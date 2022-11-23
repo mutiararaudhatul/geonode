@@ -39,18 +39,19 @@ def all_attachment_exists(csv_file):
             if header[i] in ATTACHMENT:
                 name_att = header[i]
                 break
-            if not name_att:
-                return
-            index_att = header.index(name_att)
-            for r in processed_csv:
-                for att_f in r[index_att].split(','):
-                    if not os.path.exists(os.path.join(dirname, att_f)):
-                        logger.info(f'att check {os.path.join(dirname, att_f)} not found')
-                        raise AttachmentNotFound
+        if not name_att:
+            return
+        index_att = header.index(name_att)
+        for r in processed_csv:
+            for att_f in r[index_att].split(','):
+                att_f = att_f.strip()
+                if att_f and not os.path.exists(os.path.join(dirname, att_f)):
+                    logger.info(f'att check {os.path.join(dirname, att_f)} not found')
+                    raise AttachmentNotFound
     return True
 
 def add_time_check(csv_file):
-    with open(os.path.join(os.path.dirname(csv_file), '.gn-timecheck', 'w')) as f:
+    with open(os.path.join(os.path.dirname(csv_file), '.gn-timecheck'), 'w') as f:
         f.write(str(int(datetime.now().timestamp())))
 
 def process_csv(csv_file, user, layer_id):
