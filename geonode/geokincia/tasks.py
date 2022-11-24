@@ -4,7 +4,7 @@ import shutil
 from django.conf import settings
 from django.db import connections
 from django.db.models import Q
-from geonode.tasks.tasks import send_mail
+from geonode.tasks.tasks import send_email
 from django.contrib.auth import get_user_model
 from geonode.geokincia import db_utils
 from geonode.layers.models import Dataset, UserCollectorStorage
@@ -79,15 +79,16 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
             layer.file_path = os.path.join('source', os.path.basename(source_file))
             storage.share_file(layer.file_path, None, 'r')
             layer.save()
-            send_mail.delay('Source Dataset Project %s' % layer.title,
-    '''Berikut adalah source dataset untuk project %s .
-    %s
-    Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, source_url), settings.DEFAULT_FROM_EMAIL, users, fail_silently=True)
+            send_email(f'Source Dataset Project %s' % layer.title,
+                f'Berikut adalah source dataset untuk project {layer.title} : \n {source_url} \n' +
+                'Sebelum me-upload silahkan buat shortcut ke home anda', 
+                settings.DEFAULT_FROM_EMAIL, users, fail_silently=True)
         except:
             logger.error(f'fail to update source dataet {dataset_id}')
             logger.debug(traceback.format_exc())
-            send_mail.delay(f'Project {layer.title}: Gagal Buat Source Dataset',
-                    f'Gagal membuat  source dataset untuk project {layer.title}', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
+            send_email(f'Project {layer.title}: Gagal Buat Source Dataset',
+                    f'Gagal membuat  source dataset untuk project {layer.title}', 
+                    settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
     #upload
     logger.debug(f'user_collectors {len(user_collectors)}')
     for user_collector in user_collectors:
@@ -100,15 +101,14 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
                 user_collector.folder = 'upload/' + folder
                 storage.share_file('upload/' + folder, None, 'w')
                 user_collector.save()
-                send_mail.delay('Folder Upload Project %s' % layer.title,
-'''Berikut adalah folder upload untuk project %s user %s .
-%s
-Sebelum me-upload silahkan buat shortcut ke 'home' anda''' % (layer.title, user_collector.user.username, upload_url)
-            , settings.DEFAULT_FROM_EMAIL, [user_collector.user.email], fail_silently=True)
+                send_email(f'Folder Upload Project {layer.title}',
+                    f'Berikut adalah folder upload untuk project {layer.title} user {user_collector.user.username} :\n' +
+                    f'{upload_url} \nSebelum me-upload silahkan buat shortcut ke home anda',
+                    settings.DEFAULT_FROM_EMAIL, [user_collector.user.email], fail_silently=True)
             except:
                 logger.warning(f'fail to create upload folder for user {user_collector.user.username} dataset {dataset_id}')
                 logger.debug(traceback.format_exc())
-                send_mail.delay(f'Project {layer.title}: Gagal Buat Upload Folder',
+                send_email(f'Project {layer.title}: Gagal Buat Upload Folder',
                 f'Gagal membuat upload folder untuk project {layer.title} user {user_collector.user.username}', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
 @app.task(
@@ -138,7 +138,7 @@ def process_uploaded_data_task(self, storage_provider):
     except:
         logger.warning(f'fail to pull uploaded dataset')
         logger.debug(traceback.format_exc())
-        send_mail.delay(f'{storage_provider} Pull dataset gagal ',
+        send_email(f'{storage_provider} Pull dataset gagal ',
                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
     for layer_dir in os.listdir(upload_dir):
@@ -186,7 +186,7 @@ def process_uploaded_data_task(self, storage_provider):
                         logger.warning(f'fail to processed uploaded dataset')
                         logger.debug(traceback.format_exc())
                         storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_error')
-                        send_mail.delay(f'{storage_provider} Pull dataset gagal ',
+                        send_email(f'{storage_provider} Pull dataset gagal ',
                                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
 @app.task(
