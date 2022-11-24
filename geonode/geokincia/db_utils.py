@@ -164,6 +164,7 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
         return row
 
     if target_geom[1] != src_geom[1]:
+        logger.debug(f'geometry beda')
         raise Exception
     if target_geom[0]+target_geom[1] == src_geom[0]+src_geom[1]:
         return rows
@@ -213,8 +214,9 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
             break
 
     target_columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
-    target_columns.append(name_att)
     remove_columns = []
+    if name_att:
+        target_columns.append(name_att)
     remove_columns.append(header.index('___att'))
     try:
         remove_columns.append(header.index(get_primary_key(conn_name, target_table)))
@@ -226,6 +228,10 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
             remove_columns.append(header.index(column))
     logger.debug(repr(remove_columns))
     
+    if len(remove_columns) > 3 or abs(len(target_columns) - len(header)) > 2:
+        logger.debug(f'too many remove columns. probably wrong dataset')
+        raise Exception
+
     remove_columns.sort()
     remove_columns.reverse()
     
@@ -235,7 +241,9 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         header[c_index:c_index+1] = []
         for i in range(len(rows)):
             rows[i][c_index:c_index+1] = []
-    index_att = header.index(name_att)
+    
+    if name_att:
+        index_att = header.index(name_att)
     index_id = header.index('___id')
     index_update = header.index('___update')
     header[index_att] = '___att'
@@ -257,7 +265,8 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
             updated_rows = []
 
     for row in inserted_rows:
-        row[index_att] = process_attachment(row[index_att], basedir)
+        if name_att:
+            row[index_att] = process_attachment(row[index_att], basedir)
         logger.debug(f'try to insert {row}')
         row[index_update] = None
         insert_row(conn_name, target_table, header, row)
@@ -265,7 +274,8 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     for row in updated_rows:
         existing_att = execute_query(conn_name,
                 'select "___att" from "%s" where "___id"=\'%s\'' % (src_table, row[index_id]), None, True)
-        row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['___att'])
+        if name_att:
+            row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['___att'])
         logger.debug(f'try to update {row}')
         row[index_update] = None
         update_row(conn_name, src_table, header, row, '___id', row[index_id])
