@@ -162,7 +162,7 @@ def process_uploaded_data_task(self, storage_provider):
                                 logger.info(f'shp to csv {csv_file}')
                             else:
                                 #download not complte. skipping
-                                return
+                                continue
 
                         if os.path.exists(os.path.join(uploaded_path, '.gn-timecheck')):
                             with open(os.path.join(uploaded_path, '.gn-timecheck'), 'r') as cf:
@@ -173,13 +173,13 @@ def process_uploaded_data_task(self, storage_provider):
                                         utils.all_attachment_exists(csv_file)
                                 except:
                                     #utils.add_time_check(csv_file)
-                                    return
+                                    continue
                         else:
                             try:
                                 utils.all_attachment_exists(csv_file)
                             except:
                                 utils.add_time_check(csv_file)
-                                return
+                                continue
 
                         utils.process_csv(csv_file, user_dataset, int(layer_dir.split('_')[-1]))
                         storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')

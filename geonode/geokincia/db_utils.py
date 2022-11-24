@@ -283,11 +283,11 @@ def copy_table(conn_name, src_table, target_table):
     #update
     q = '''select %s, "%s" from "%s" where "___id" <> '' ''' % \
         (','.join(quote_columns), src_geo, src_table)
-    for row in execute_query(conn_name, q, None, False):
+    for row in execute_query(conn_name, q, None, True, False):
         try:
             existing_att_field = execute_query(conn_name,
                     'select "___att" from "%s" where "___id"=\'%s\'' % (target_table, row[index_id]), None, True)[0]['___att']
-            existing_att_field = existing_att.strip()
+            existing_att_field = existing_att_field.strip()
         except:
             logger.debug(f'current record or att not found {row[index_id]}')
             continue
@@ -296,9 +296,10 @@ def copy_table(conn_name, src_table, target_table):
         new_att = [att for att in row[index_att].split(';')]
         merge_att = list(filter(lambda r: r is not None, [ None if att in existing_att else att for att in new_att]))
 
-        row[index_att] = ';'.join(merge_att + existing_att)
-        logger.debug(f'try to update {row}')
-        update_row(conn_name, target_table, columns + [target_geo], row, '___id', row[index_id])
+        wk_row = list(row)
+        wk_row[index_att] = ';'.join(merge_att + existing_att)
+        logger.debug(f'try to update {wk_row}')
+        update_row(conn_name, target_table, columns + [target_geo], wk_row, '___id', wk_row[index_id])
 
     #insert
     quote_columns.remove('"___id"')

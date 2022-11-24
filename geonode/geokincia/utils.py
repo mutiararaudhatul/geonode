@@ -63,7 +63,6 @@ def process_csv(csv_file, user, layer_id):
         return
 
     src_layer = layer.name
-    logger.debug(f'process_csv not use aggregate data')
     user_collector = UserCollectorStorage.objects.get(dataset=layer, user__username=user)
     if not user_collector.intermediate_dataset_name:
             #if not sync create dataset
@@ -73,7 +72,6 @@ def process_csv(csv_file, user, layer_id):
         user_collector.save()
     else:
         target_layer = user_collector.intermediate_dataset_name
-    logger.debug(f'process_csv use aggregate data')
     db_utils.load_from_csv('datastore', csv_file, target_layer, layer.use_aggregate_data, src_layer)
     truncate_geoserver_cache(layer.workspace, target_layer)
     if layer.use_aggregate_data:
