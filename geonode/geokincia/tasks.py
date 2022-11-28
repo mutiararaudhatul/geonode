@@ -95,7 +95,7 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
         logger.debug(f'user_collector {user_collector.user.username}')
         if not user_collector.upload_url:
             try:
-                folder = layer.name + '_' + str(layer.id) + '/' + user_collector.user.username
+                folder = layer.name + '_' + str(layer.id) + '/' + layer.name + '_' + user_collector.user.username
                 upload_url = storage.create_folder(folder)
                 user_collector.upload_url = upload_url
                 user_collector.folder = 'upload/' + folder
@@ -180,7 +180,7 @@ def process_uploaded_data_task(self, storage_provider):
                                 utils.add_time_check(csv_file)
                                 continue
 
-                        utils.process_csv(csv_file, user_dataset, int(layer_dir.split('_')[-1]))
+                        utils.process_csv(csv_file, user_dataset.split('_')[-1], int(layer_dir.split('_')[-1]))
                         storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')
                     except:
                         logger.warning(f'fail to processed uploaded dataset')

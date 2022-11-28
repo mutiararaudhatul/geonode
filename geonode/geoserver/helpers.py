@@ -78,7 +78,7 @@ from geonode.utils import (
 
 from .security import set_geowebcache_invalidate_cache
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('geonode.geokincia')
 
 temp_style_name_regex = r'[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}_ms_.*'
 

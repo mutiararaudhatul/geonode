@@ -22,7 +22,6 @@ from django.conf import settings
 from django.core.management import call_command
 
 from celery import shared_task
-from celery.utils.log import get_task_logger
 
 from geonode.celery_app import app
 from geonode.tasks.tasks import (
@@ -44,7 +43,8 @@ from .helpers import (
     create_gs_thumbnail,
     sync_instance_with_geoserver)
 
-logger = get_task_logger(__name__)
+import logging
+logger = logging.getLogger('geonode.geokincia')
 
 
 @app.task(

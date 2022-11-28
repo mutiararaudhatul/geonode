@@ -217,7 +217,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     remove_columns = []
     if name_att:
         target_columns.append(name_att)
-    remove_columns.append(header.index('___att'))
+    
     try:
         remove_columns.append(header.index(get_primary_key(conn_name, target_table)))
     except:
@@ -228,10 +228,16 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
             remove_columns.append(header.index(column))
     logger.debug(repr(remove_columns))
     
-    if len(remove_columns) > 3 or abs(len(target_columns) - len(header)) > 2:
+    if len(remove_columns) > 2 or abs(len(target_columns) - len(header)) > 2:
         logger.debug(f'too many remove columns. probably wrong dataset')
         raise Exception
 
+    rem_cols = ['___att', 'updated_by', 'updated_at', 'created_by', 'created_at']
+    for col in rem_cols:
+        try:
+            remove_columns.append(header.index(col))
+        except:
+            pass
     remove_columns.sort()
     remove_columns.reverse()
     
@@ -282,6 +288,20 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
 
 def copy_table(conn_name, src_table, target_table):
     columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
+
+    is_updated_by = False
+    is_created_by = False
+
+    if 'updated_by' in columns and 'updated_at' in columns:
+        is_updated_by = True
+        logger.debug('Add updateby')
+        columns.remove('updated_by')
+        columns.remove('updated_at')
+    if 'created_by' in columns and 'created_at' in columns:
+        is_created_by = True
+        logger.debug('Add createdby')
+        columns.remove('created_by')
+        columns.remove('created_at')
     target_primary_index = columns.index(get_primary_key(conn_name, target_table))
     columns[target_primary_index:target_primary_index+1] = []
     target_geo = get_geom_column(conn_name, target_table)['f_geometry_column']
@@ -289,6 +309,8 @@ def copy_table(conn_name, src_table, target_table):
     index_id = columns.index('___id')
     src_geo = get_geom_column(conn_name, src_table)['f_geometry_column']
     quote_columns = [ f'"{c}"' for c in columns]
+
+    user = src_table.split('_')[-1]
 
     #update
     q = '''select %s, "%s" from "%s" where "___id" <> '' ''' % \
@@ -309,7 +331,13 @@ def copy_table(conn_name, src_table, target_table):
         wk_row = list(row)
         wk_row[index_att] = ';'.join(merge_att + existing_att)
         logger.debug(f'try to update {wk_row}')
-        update_row(conn_name, target_table, columns + [target_geo], wk_row, '___id', wk_row[index_id])
+        wk_cols = columns + [target_geo]
+        if is_updated_by:
+            wk_row.append(user)
+            wk_row.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            wk_cols = wk_cols + ['updated_by', 'updated_at']
+        
+        update_row(conn_name, target_table, wk_cols, wk_row, '___id', wk_row[index_id])
 
     #insert
     quote_columns.remove('"___id"')
@@ -317,6 +345,10 @@ def copy_table(conn_name, src_table, target_table):
     where ("___id" = '') is not false ''' % \
         (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), src_table)
     
+    if is_created_by:
+        q = '''insert into "%s"("%s","___id", %s, "created_by") select "%s",uuid_generate_v4(),'%s' from "%s" 
+    where ("___id" = '') is not false ''' % \
+        (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), user, src_table)
     execute_query(conn_name, q, None, False)
     logger.debug(f'finish merge')
 

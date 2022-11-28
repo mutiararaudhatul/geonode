@@ -36,7 +36,7 @@ from geonode.geoserver.helpers import (
     create_geoserver_db_featurestore)
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('geonode.geokincia')
 
 BBOX = [ 100.258846, -1.140767, 100.508621, -0.706915]
 DATA_QUALITY_MESSAGE = "Created with GeoPortal @ DPRKPP Padang"

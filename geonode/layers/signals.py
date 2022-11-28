@@ -10,7 +10,7 @@ from geonode.geokincia.tasks import delete_file_task, process_uploaded_data_task
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('geonode.geokincia')
 
 @receiver(post_delete, sender=UserCollectorStorage)
 def delete_intermediate_storage(sender, instance, *args, **kwargs):

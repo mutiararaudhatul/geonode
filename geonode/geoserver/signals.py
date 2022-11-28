@@ -38,7 +38,7 @@ from geonode.services.enumerations import CASCADED
 from . import BACKEND_PACKAGE
 from .tasks import geoserver_cascading_delete, geoserver_post_save_datasets
 
-logger = logging.getLogger("geonode.geoserver.signals")
+logger = logging.getLogger("geonode.geokincia")
 
 geoserver_automatic_default_style_set = Signal(providing_args=['instance'])
 

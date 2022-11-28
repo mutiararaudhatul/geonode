@@ -19,12 +19,12 @@
 
 """celery tasks for geonode.layers."""
 from geonode.celery_app import app
-from celery.utils.log import get_task_logger
 
 from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.resource.manager import resource_manager
 
-logger = get_task_logger(__name__)
+import logging
+logger = logging.getLogger('geonode.geokincia')
 
 
 @app.task(
