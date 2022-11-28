@@ -243,19 +243,11 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     
     logger.debug(f'remove column : {remove_columns}')
 
-    for c_index in remove_columns:
-        header[c_index:c_index+1] = []
-        for i in range(len(rows)):
-            rows[i][c_index:c_index+1] = []
-    
-    if name_att:
-        index_att = header.index(name_att)
-    index_id = header.index('___id')
-    index_update = header.index('___update')
-    header[index_att] = '___att'
-    basedir = os.path.dirname(csv_file)
-
-    logger.debug(f'final header {header}')
+    is_updated_at = False
+    index_updated_at = -1
+    if 'updated_by' in header and 'updated_at' in header:
+        is_updated_at = True
+        index_updated_at = header.index('updated_at')
 
     if is_init:
         inserted_rows = rows
@@ -265,10 +257,32 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
 
         if is_sync:
             inserted_rows = list(filter(lambda r: not r[index_id], rows))
-            updated_rows = list(filter(lambda r: r[index_id] and r[index_update], rows))
+            if is_updated_at:
+                updated_rows = list(filter(lambda r: r[index_id] and (r[index_update] or r[index_updated_at]), rows))
+            else:
+                updated_rows = list(filter(lambda r: r[index_id] and r[index_update], rows))
         else:
-            inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update], rows))
+            if is_updated_at:
+                inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update] or r[index_updated_at], rows))
+            else:
+                inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update], rows))
             updated_rows = []
+
+    for c_index in remove_columns:
+        header[c_index:c_index+1] = []
+        for i in range(len(inserted_rows)):
+            inserted_rows[i][c_index:c_index+1] = []
+        for i in range(len(updated_rows)):
+            updated_rows[i][c_index:c_index+1] = []
+    
+    if name_att:
+        index_att = header.index(name_att)
+    index_id = header.index('___id')
+    index_update = header.index('___update')
+    header[index_att] = '___att'
+    basedir = os.path.dirname(csv_file)
+
+    logger.debug(f'final header {header}')
 
     for row in inserted_rows:
         if name_att:
@@ -346,7 +360,7 @@ def copy_table(conn_name, src_table, target_table):
         (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), src_table)
     
     if is_created_by:
-        q = '''insert into "%s"("%s","___id", %s, "created_by") select "%s",uuid_generate_v4(),'%s' from "%s" 
+        q = '''insert into "%s"("%s","___id", %s, "created_by") select "%s",uuid_generate_v4(), %s, '%s' from "%s" 
     where ("___id" = '') is not false ''' % \
         (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), user, src_table)
     execute_query(conn_name, q, None, False)

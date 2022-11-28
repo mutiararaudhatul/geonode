@@ -23,6 +23,8 @@ def delete_dataset(sender, instance, *args, **kwargs):
     logger.debug(f'delete dataset {instance.id}')
     if instance.is_data_collector and instance.source_url:
         delete_file_task.delay(instance.intermediate_storage, instance.file_path)
+        delete_file_task.delay(instance.intermediate_storage, f'upload/{instance.nama}_{instance.id}')
+
 
 # @receiver(post_save, sender=Configuration)
 # def collect_collector(sender, instance, *args, **kwargs):
