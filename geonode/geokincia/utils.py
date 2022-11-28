@@ -72,7 +72,7 @@ def process_csv(csv_file, user, layer_id):
         user_collector.save()
     else:
         target_layer = user_collector.intermediate_dataset_name
-    db_utils.load_from_csv('datastore', csv_file, target_layer, layer.use_aggregate_data, src_layer)
+    db_utils.load_from_csv('datastore', csv_file, target_layer, layer.use_aggregate_data, src_layer, user=user_collector.user.username)
     truncate_geoserver_cache(layer.workspace, target_layer)
     if layer.use_aggregate_data:
         truncate_geoserver_cache(layer.workspace, layer.name)

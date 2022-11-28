@@ -1,6 +1,6 @@
 from django.db import connections
 from django.conf import settings
-from datetime import datetime
+from datetime import datetime, timedelta
 from PIL import Image
 
 import re
@@ -175,7 +175,7 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
     elif target_geom[0] != 'MULTI' and src_geom[0] == 'MULTI':
         return list(map(_to_single, rows))
 
-def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is_init=False):
+def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is_init=False, user=''):
     rows = []
     header = []
     with open(csv_file, 'r') as f:
@@ -232,7 +232,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         logger.debug(f'too many remove columns. probably wrong dataset')
         raise Exception
 
-    rem_cols = ['___att', 'updated_by', 'updated_at', 'created_by', 'created_at']
+    rem_cols = ['___att', 'updated_by', 'lastupdate', 'created_by', 'created_at', 'updated_at']
     for col in rem_cols:
         try:
             remove_columns.append(header.index(col))
@@ -245,9 +245,12 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
 
     is_updated_at = False
     index_updated_at = -1
-    if 'updated_by' in header and 'updated_at' in header:
+    index_id = header.index('___id')
+    index_update = header.index('___update')
+    date_compare = datetime.now() - timedelta(days=365)
+    if 'lastupdate' in header:
         is_updated_at = True
-        index_updated_at = header.index('updated_at')
+        index_updated_at = header.index('lastupdate')
 
     if is_init:
         inserted_rows = rows
@@ -258,12 +261,14 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         if is_sync:
             inserted_rows = list(filter(lambda r: not r[index_id], rows))
             if is_updated_at:
-                updated_rows = list(filter(lambda r: r[index_id] and (r[index_update] or r[index_updated_at]), rows))
+                updated_rows = list(filter(lambda r: r[index_id] and (r[index_update] or 
+                    (r[index_updated_at] and datetime.strptime(r[index_updated_at], '%Y-%m-%dT%H:%M:%S') > date_compare)), rows))
             else:
                 updated_rows = list(filter(lambda r: r[index_id] and r[index_update], rows))
         else:
             if is_updated_at:
-                inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update] or r[index_updated_at], rows))
+                inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update] or 
+                (r[index_updated_at] and datetime.strptime(r[index_updated_at], '%Y-%m-%dT%H:%M:%S') > date_compare), rows))
             else:
                 inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update], rows))
             updated_rows = []
@@ -291,6 +296,9 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         row[index_update] = None
         insert_row(conn_name, target_table, header, row)
 
+    if is_sync:
+        header.append('updated_by')
+        header.append('updated_at')
     for row in updated_rows:
         existing_att = execute_query(conn_name,
                 'select "___att" from "%s" where "___id"=\'%s\'' % (src_table, row[index_id]), None, True)
@@ -298,6 +306,9 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
             row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['___att'])
         logger.debug(f'try to update {row}')
         row[index_update] = None
+        if is_sync:
+            row.append(user)
+            row.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         update_row(conn_name, src_table, header, row, '___id', row[index_id])
 
 def copy_table(conn_name, src_table, target_table):
@@ -306,14 +317,12 @@ def copy_table(conn_name, src_table, target_table):
     is_updated_by = False
     is_created_by = False
 
-    if 'updated_by' in columns and 'updated_at' in columns:
+    if 'lastupdate' in columns:
         is_updated_by = True
         logger.debug('Add updateby')
         columns.remove('updated_by')
+        columns.remove('lastupdate')
         columns.remove('updated_at')
-    if 'created_by' in columns and 'created_at' in columns:
-        is_created_by = True
-        logger.debug('Add createdby')
         columns.remove('created_by')
         columns.remove('created_at')
     target_primary_index = columns.index(get_primary_key(conn_name, target_table))
@@ -349,7 +358,8 @@ def copy_table(conn_name, src_table, target_table):
         if is_updated_by:
             wk_row.append(user)
             wk_row.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-            wk_cols = wk_cols + ['updated_by', 'updated_at']
+            wk_row.append(None)
+            wk_cols = wk_cols + ['updated_by', 'updated_at', 'lastupdate']
         
         update_row(conn_name, target_table, wk_cols, wk_row, '___id', wk_row[index_id])
 
@@ -359,10 +369,11 @@ def copy_table(conn_name, src_table, target_table):
     where ("___id" = '') is not false ''' % \
         (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), src_table)
     
-    if is_created_by:
-        q = '''insert into "%s"("%s","___id", %s, "created_by") select "%s",uuid_generate_v4(), %s, '%s' from "%s" 
+    if is_updated_by:
+        q = '''insert into "%s"("%s","___id", %s, "created_by", "created_at") select "%s",uuid_generate_v4(), %s, '%s', '%s' from "%s" 
     where ("___id" = '') is not false ''' % \
-        (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), user, src_table)
+        (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), user, 
+        datetime.now().strftime('%Y-%m-%d %H:%M:%S'), src_table)
     execute_query(conn_name, q, None, False)
     logger.debug(f'finish merge')
 
