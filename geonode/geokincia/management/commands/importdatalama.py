@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from geonode.geokincia import db_utils
-
+from datetime import datetime
 import os
 import subprocess
 import csv
@@ -26,6 +26,10 @@ class Command(BaseCommand):
         for field in fields:
             header[field : field + 1] = []
         header.append('Attachments')
+        header.append('created_by')
+        header.append('created_at')
+        header.append('updated_by')
+        header.append('updated_at')
         header.append('___id')
         header.append('___update')
         header.append('___att')
@@ -45,6 +49,10 @@ class Command(BaseCommand):
             for field in fields:
                 row[field:field+1] = []
             row.append(','.join(new_att))
+            row.append('SYSTEM')
+            row.append(datetime.now().strftime('%Y-%m-%d'))
+            row.append(None)
+            row.append(None)
             row.append(str(uuid.uuid4()))
             row.append(None)
             row.append(None)

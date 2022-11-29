@@ -289,7 +289,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
 
     logger.debug(f'final header {header}')
 
-    final_header = [h for h in header] + ['created_by, created_at']
+    final_header = [h for h in header] + ['created_by', 'created_at', 'updated_by', 'updated_at']
 
     for row in inserted_rows:
         if name_att:
@@ -298,9 +298,11 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         row[index_update] = None
         row.append(user)
         row.append(datetime.now().strftime('%Y-%m-%d'))
+        row.append(user)
+        row.append(datetime.now().strftime('%Y-%m-%d'))
         insert_row(conn_name, target_table, final_header, row)
 
-    final_header = [h for h in header] + ['updated_by, updated_at']
+    final_header = [h for h in header] + ['updated_by', 'updated_at']
     
     for row in updated_rows:
         existing_att = execute_query(conn_name,
@@ -334,8 +336,6 @@ def copy_table(conn_name, src_table, target_table):
     src_geo = get_geom_column(conn_name, src_table)['f_geometry_column']
     quote_columns = [ f'"{c}"' for c in columns]
 
-    user = src_table.split('_')[-1]
-
     #update
     final_quote_columns = [h for h in quote_columns] + ['"updated_by"', '"updated_at"']
     q = '''select %s, "%s" from "%s" where "___id" <> '' ''' % \
@@ -356,7 +356,7 @@ def copy_table(conn_name, src_table, target_table):
         wk_row = list(row)
         wk_row[index_att] = ';'.join(merge_att + existing_att)
         logger.debug(f'try to update {wk_row}')
-        wk_cols = columns + [target_geo, 'updated_by', 'updated_at']
+        wk_cols = columns + ['updated_by', 'updated_at', target_geo]
         if is_updated_by:
             wk_row.append(None)
             wk_cols = wk_cols + ['lastupdate']
