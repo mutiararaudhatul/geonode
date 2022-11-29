@@ -955,6 +955,7 @@ def set_attributes(
         if len(attribute) == 2:
             attribute.extend((None, None, 0))
 
+    lower_attribute = ('___id','___att', 'created_by', 'created_at', 'updated_by', 'updated_at')
     attributes = layer.attribute_set.all()
     # Delete existing attributes if they no longer exist in an updated layer
     for la in attributes:
@@ -991,7 +992,7 @@ def set_attributes(
                     la.attribute_type = ftype
                     la.description = description
                     la.attribute_label = label
-                    if field == '___id' or field == '___att':
+                    if field in lower_attribute:
                         la.display_order = iter + 1000    
                     else:
                         la.display_order = iter
