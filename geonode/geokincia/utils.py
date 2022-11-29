@@ -90,8 +90,7 @@ def process_shp(shp_file):
 def create_new_collector_dataset(layer, username):
     ATTRIBUTE_TYPE_MAPPING = {'xsd:string': 'string', 'xsd:int': 'integer', 'xsd:float': 'float', 'xsd:dateTime': 'date', 'xsd:double': 'float', 'xsd:date': 'date'}
     ATTRIBUTE_GEO_PREFIX = 'gml:'
-    ATTRIBUTE_SKIP_PREFIX = '___'
-    ATTRIBUTE_ID = ('fid', 'gid')
+    ATTRIBUTE_SKIP = ('___update', '___id', '___att', 'created_by', 'created_at', 'updated_by', 'updated_at', 'fid', 'gid')
     ATTRIBUTE_GEO_TYPES = r'(MultiPolygon|Polygon|MultiLineString|LineString|MultiPoint|Point)'
     geometry_type = ''
     attributes = {}
@@ -102,7 +101,7 @@ def create_new_collector_dataset(layer, username):
                 raise Exception
             continue
             
-        if attribute.attribute.startswith(ATTRIBUTE_SKIP_PREFIX) or attribute.attribute in ATTRIBUTE_ID:
+        if attribute.attribute in ATTRIBUTE_SKIP:
             continue
         attributes[attribute.attribute] = ATTRIBUTE_TYPE_MAPPING[attribute.attribute_type]
 

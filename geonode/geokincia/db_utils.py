@@ -289,16 +289,19 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
 
     logger.debug(f'final header {header}')
 
+    final_header = [h for h in header] + ['created_by, created_at']
+
     for row in inserted_rows:
         if name_att:
             row[index_att] = process_attachment(row[index_att], basedir)
         logger.debug(f'try to insert {row}')
         row[index_update] = None
-        insert_row(conn_name, target_table, header, row)
+        row.append(user)
+        row.append(datetime.now().strftime('%Y-%m-%d'))
+        insert_row(conn_name, target_table, final_header, row)
 
-    if is_sync:
-        header.append('updated_by')
-        header.append('updated_at')
+    final_header = [h for h in header] + ['updated_by, updated_at']
+    
     for row in updated_rows:
         existing_att = execute_query(conn_name,
                 'select "___att" from "%s" where "___id"=\'%s\'' % (src_table, row[index_id]), None, True)
@@ -306,16 +309,14 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
             row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['___att'])
         logger.debug(f'try to update {row}')
         row[index_update] = None
-        if is_sync:
-            row.append(user)
-            row.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        update_row(conn_name, src_table, header, row, '___id', row[index_id])
+        row.append(user)
+        row.append(datetime.now().strftime('%Y-%m-%d'))
+        update_row(conn_name, src_table, final_header, row, '___id', row[index_id])
 
 def copy_table(conn_name, src_table, target_table):
     columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
 
     is_updated_by = False
-    is_created_by = False
 
     if 'lastupdate' in columns:
         is_updated_by = True
@@ -336,8 +337,9 @@ def copy_table(conn_name, src_table, target_table):
     user = src_table.split('_')[-1]
 
     #update
+    final_quote_columns = [h for h in quote_columns] + ['"updated_by"', '"updated_at"']
     q = '''select %s, "%s" from "%s" where "___id" <> '' ''' % \
-        (','.join(quote_columns), src_geo, src_table)
+        (','.join(final_quote_columns), src_geo, src_table)
     for row in execute_query(conn_name, q, None, True, False):
         try:
             existing_att_field = execute_query(conn_name,
@@ -354,26 +356,20 @@ def copy_table(conn_name, src_table, target_table):
         wk_row = list(row)
         wk_row[index_att] = ';'.join(merge_att + existing_att)
         logger.debug(f'try to update {wk_row}')
-        wk_cols = columns + [target_geo]
+        wk_cols = columns + [target_geo, 'updated_by', 'updated_at']
         if is_updated_by:
-            wk_row.append(user)
-            wk_row.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             wk_row.append(None)
-            wk_cols = wk_cols + ['updated_by', 'updated_at', 'lastupdate']
+            wk_cols = wk_cols + ['lastupdate']
         
         update_row(conn_name, target_table, wk_cols, wk_row, '___id', wk_row[index_id])
 
     #insert
     quote_columns.remove('"___id"')
+    final_quote_columns = [h for h in quote_columns] + ['"created_by"', '"created_at"']
     q = '''insert into "%s"("%s","___id", %s) select "%s",uuid_generate_v4(),%s from "%s" 
     where ("___id" = '') is not false ''' % \
-        (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), src_table)
+        (target_table, target_geo, ','.join(final_quote_columns), src_geo, ','.join(final_quote_columns), src_table)
     
-    if is_updated_by:
-        q = '''insert into "%s"("%s","___id", %s, "created_by", "created_at") select "%s",uuid_generate_v4(), %s, '%s', '%s' from "%s" 
-    where ("___id" = '') is not false ''' % \
-        (target_table, target_geo, ','.join(quote_columns), src_geo, ','.join(quote_columns), user, 
-        datetime.now().strftime('%Y-%m-%d %H:%M:%S'), src_table)
     execute_query(conn_name, q, None, False)
     logger.debug(f'finish merge')
 
