@@ -39,7 +39,7 @@ from geonode.geoserver.helpers import (
 logger = logging.getLogger('geonode.geokincia')
 
 BBOX = [ 100.258846, -1.140767, 100.508621, -0.706915]
-DATA_QUALITY_MESSAGE = "Created with GeoPortal @ DPRKPP Padang"
+DATA_QUALITY_MESSAGE = "Created with GeoPortal @ DPRKP Padang"
 
 
 def create_dataset(name, title, owner_name, geometry_type, attributes=None, is_collector_dataset=False, group=None, is_slug=True):
