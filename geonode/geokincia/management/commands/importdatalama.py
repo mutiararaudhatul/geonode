@@ -21,11 +21,12 @@ class Command(BaseCommand):
         fields = []
         for i, h in enumerate(header):
             h_lower = h.lower()
-            if h_lower.startswith('foto') or h_lower.startswith('video'):
+            if h_lower.startswith('foto') or h_lower.startswith('video') or h_lower.startswith('attachme'):
                 fields.append(i)
+        fields.reverse()
         for field in fields:
             header[field : field + 1] = []
-        header.append('Attachments')
+
         header.append('created_by')
         header.append('created_at')
         header.append('updated_by')
@@ -33,6 +34,8 @@ class Command(BaseCommand):
         header.append('___id')
         header.append('___update')
         header.append('___att')
+        header.append('Attachments')
+        
         for row in rows:
             new_att = []
             for field in fields:
@@ -47,7 +50,7 @@ class Command(BaseCommand):
                     new_att.append(os.path.join(att_path, row[field]))
             for field in fields:
                 row[field:field+1] = []
-            row.append(','.join(new_att))
+            
             row.append('SYSTEM')
             row.append(datetime.now().strftime('%Y-%m-%d'))
             row.append(None)
@@ -55,6 +58,8 @@ class Command(BaseCommand):
             row.append(str(uuid.uuid4()))
             row.append(None)
             row.append(None)
+            row.append(','.join(new_att))
+        
         with open(os.path.join(os.path.dirname(source), '___out2.csv'), 'w') as f:
             writer = csv.writer(f, dialect='excel')
             writer.writerow(header)

@@ -88,9 +88,11 @@ def process_shp(shp_file):
 
 
 def create_new_collector_dataset(layer, username):
-    ATTRIBUTE_TYPE_MAPPING = {'xsd:string': 'string', 'xsd:int': 'integer', 'xsd:float': 'float', 'xsd:dateTime': 'date', 'xsd:double': 'float', 'xsd:date': 'date'}
+    ATTRIBUTE_TYPE_MAPPING = {'xsd:string': 'string', 'xsd:int': 'integer', 'xsd:integer': 'integer','xsd:float': 'float', 'xsd:dateTime': 'date', 
+    'xsd:double': 'float', 'xsd:date': 'date', 'xsd:decimal': 'float'}
     ATTRIBUTE_GEO_PREFIX = 'gml:'
-    ATTRIBUTE_SKIP = ('___update', '___id', '___att', 'created_by', 'created_at', 'updated_by', 'updated_at', 'fid', 'gid')
+    pri_key = db_utils.get_primary_key('datastore', layer.name)
+    ATTRIBUTE_SKIP = ('___update', '___id', '___att', 'created_by', 'created_at', 'updated_by', 'updated_at', pri_key)
     ATTRIBUTE_GEO_TYPES = r'(MultiPolygon|Polygon|MultiLineString|LineString|MultiPoint|Point)'
     geometry_type = ''
     attributes = {}

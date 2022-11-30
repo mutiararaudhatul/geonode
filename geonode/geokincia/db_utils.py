@@ -116,7 +116,7 @@ def get_primary_key(conn_name, table_name):
 
 def insert_row(conn_name, table_name, colums, values, add_multi=None, target_geo='', geo_value=''):
     colums_txt = ','.join([ '"%s"' % c for c in colums])
-    values_txt = ','.join(['null' if v is None else "'%s'" % v for v in values])
+    values_txt = ','.join(['null' if v is None else "'%s'" % re.sub(r"'", "''", v) for v in values])
     if add_multi:
         q = 'insert into "%s"("%s", %s) values(st_multi(\'%s\'), %s)' % (table_name, target_geo, colums_txt, geo_value, values_txt)
     else:
@@ -294,12 +294,12 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     for row in inserted_rows:
         if name_att:
             row[index_att] = process_attachment(row[index_att], basedir)
-        logger.debug(f'try to insert {row}')
         row[index_update] = None
         row.append(user)
         row.append(datetime.now().strftime('%Y-%m-%d'))
         row.append(user)
         row.append(datetime.now().strftime('%Y-%m-%d'))
+        
         insert_row(conn_name, target_table, final_header, row)
 
     final_header = [h for h in header] + ['updated_by', 'updated_at']

@@ -133,13 +133,7 @@ def process_uploaded_data_task(self, storage_provider):
     for admin in get_user_model().objects.filter(Q(is_superuser=True) | Q(is_staff=True), is_active=True):
         admins.add(admin.email)
 
-    try:
-        storage.download_file('upload')
-    except:
-        logger.warning(f'fail to pull uploaded dataset')
-        logger.debug(traceback.format_exc())
-        send_email(f'{storage_provider} Pull dataset gagal ',
-                f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
+    
 
     for layer_dir in os.listdir(upload_dir):
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
@@ -204,12 +198,22 @@ def check_and_process_data_taskk(self):
         return
     
     storage_config = settings.GEOKINCIA['STORAGE']
+    for provider in storage_config.values():
+        storage = utils.get_class(provider['CLASS_NAME'])
+        storage.cwd = provider['WORKING_DIR']
+
+        try:
+            storage.download_file('upload')
+        except:
+            logger.warning(f'fail to pull uploaded dataset')
+            logger.debug(traceback.format_exc())
 
     try:
-        for dataset in Dataset.objects.filter(is_data_collector=True, intermediate_storage__in=list(storage_config.keys())):
-            logger.debug(f'schedule checking: {dataset.name}')
-            if dataset.user_collector.count() > 0:
-                process_uploaded_data_task.delay(dataset.intermediate_storage)
+        for provider in storage_config.keys():
+            logger.debug(f'schedule checking: {provider}')
+            if UserCollectorStorage.objects.filter(dataset__intermediate_storage=provider).count() > 0:
+                process_uploaded_data_task(provider)
+
         os.remove('.check_lock')
     except:
         pass
