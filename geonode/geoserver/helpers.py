@@ -955,7 +955,7 @@ def set_attributes(
         if len(attribute) == 2:
             attribute.extend((None, None, 0))
 
-    lower_attribute = ('___id','___att', 'created_by', 'created_at', 'updated_by', 'updated_at')
+    lower_attribute = ('___id','___att', 'created_by', 'created_at', 'updated_by', 'updated_at', 'lastupdate')
     attributes = layer.attribute_set.all()
     # Delete existing attributes if they no longer exist in an updated layer
     for la in attributes:
@@ -988,7 +988,7 @@ def set_attributes(
                     if _gs_attrs.exists():
                         _gs_attrs.delete()
                     la = Attribute.objects.create(dataset=layer, attribute=field)
-                    la.visible = ftype.find("gml:") != 0 and not field.startswith('___')
+                    la.visible = ftype.find("gml:") != 0 and not field.startswith('___') and field != 'lastupdate'
                     la.attribute_type = ftype
                     la.description = description
                     la.attribute_label = label
