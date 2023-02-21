@@ -314,6 +314,9 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
 
     final_header = [h for h in header] + ['updated_by', 'updated_at']
     
+    if is_sync:
+        src_geo = get_geom_column(conn_name, src_table)['f_geometry_column']
+        final_header[0] = src_geo
     for row in updated_rows:
         for i in range(len(row)):
             if i not in excl_upper_row_index and row[i]:
