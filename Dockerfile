@@ -77,6 +77,8 @@ RUN chmod +x /usr/bin/celery-beat-cmd
 RUN pip install --upgrade --no-cache-dir  --src /usr/src -r requirements.txt
 RUN pip install --upgrade  -e .
 
+RUN pip install cryptography==38.0.4
+
 # Cleanup apt update lists
 RUN rm -rf /var/lib/apt/lists/*
 
