@@ -672,9 +672,11 @@ LOGGING = {
         },
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-           'filename': '/mnt/volumes/statics/geokincia.log',
-           'formatter': 'simple'
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/mnt/volumes/statics/static/attachment/geokincia.txt',
+            'formatter': 'simple',
+            'maxBytes': 3145728,
+            'backupCount': 10
         }
     },
     "loggers": {

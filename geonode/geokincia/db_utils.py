@@ -248,6 +248,12 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     index_id = header.index('___id')
     index_update = header.index('___update')
     date_compare = datetime.now() - timedelta(days=365)
+
+    excl_upper_row_index = [0]
+    if name_att:
+        index_att = header.index(name_att)
+        excl_upper_row_index.append(index_att)
+
     if 'lastupdate' in header:
         is_updated_at = True
         index_updated_at = header.index('lastupdate')
@@ -261,13 +267,13 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         if is_sync:
             inserted_rows = list(filter(lambda r: not r[index_id], rows))
             if is_updated_at:
-                updated_rows = list(filter(lambda r: r[index_id] and (r[index_update] or 
+                updated_rows = list(filter(lambda r: r[index_id] and (r[index_update] or r[index_att] or
                     (r[index_updated_at] and datetime.strptime(r[index_updated_at], '%Y-%m-%dT%H:%M:%S') > date_compare)), rows))
             else:
                 updated_rows = list(filter(lambda r: r[index_id] and r[index_update], rows))
         else:
             if is_updated_at:
-                inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update] or 
+                inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update] or r[index_att] or
                 (r[index_updated_at] and datetime.strptime(r[index_updated_at], '%Y-%m-%dT%H:%M:%S') > date_compare), rows))
             else:
                 inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update], rows))
@@ -280,10 +286,6 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         for i in range(len(updated_rows)):
             updated_rows[i][c_index:c_index+1] = []
     
-    excl_upper_row_index = [0]
-    if name_att:
-        index_att = header.index(name_att)
-        excl_upper_row_index.append(index_att)
         
     index_id = header.index('___id')
     index_update = header.index('___update')
