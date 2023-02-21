@@ -280,8 +280,12 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         for i in range(len(updated_rows)):
             updated_rows[i][c_index:c_index+1] = []
     
+    excl_upper_row_index = [0]
     if name_att:
         index_att = header.index(name_att)
+        excl_upper_row_index.append(index_att)
+        excl_upper_row_index.append(index_id)
+        
     index_id = header.index('___id')
     index_update = header.index('___update')
     header[index_att] = '___att'
@@ -292,6 +296,9 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     final_header = [h for h in header] + ['created_by', 'created_at', 'updated_by', 'updated_at']
 
     for row in inserted_rows:
+        for i in range(len(row)):
+            if i not in excl_upper_row_index:
+                row[i] = row[i].strip().upper()
         if name_att:
             row[index_att] = process_attachment(row[index_att], basedir)
         row[index_update] = None
@@ -305,6 +312,9 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     final_header = [h for h in header] + ['updated_by', 'updated_at']
     
     for row in updated_rows:
+        for i in range(len(row)):
+            if i not in excl_upper_row_index:
+                row[i] = row[i].strip().upper()
         existing_att = execute_query(conn_name,
                 'select "___att" from "%s" where "___id"=\'%s\'' % (src_table, row[index_id]), None, True)
         if name_att:
