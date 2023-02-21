@@ -133,8 +133,6 @@ def process_uploaded_data_task(self, storage_provider):
     for admin in get_user_model().objects.filter(Q(is_superuser=True) | Q(is_staff=True), is_active=True):
         admins.add(admin.email)
 
-    
-
     for layer_dir in os.listdir(upload_dir):
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
             for uploaded in os.listdir(os.path.join(upload_dir, layer_dir, user_dataset)):

@@ -249,10 +249,8 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     index_update = header.index('___update')
     date_compare = datetime.now() - timedelta(days=365)
 
-    excl_upper_row_index = [0]
     if name_att:
         index_att = header.index(name_att)
-        excl_upper_row_index.append(index_att)
 
     if 'lastupdate' in header:
         is_updated_at = True
@@ -286,7 +284,10 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         for i in range(len(updated_rows)):
             updated_rows[i][c_index:c_index+1] = []
     
-        
+    excl_upper_row_index = [0]
+    if name_att:
+        index_att = header.index(name_att)
+        excl_upper_row_index.append(index_att) 
     index_id = header.index('___id')
     index_update = header.index('___update')
     header[index_att] = '___att'
