@@ -2243,7 +2243,7 @@ CELERY_BEAT_SCHEDULER = os.environ.get(
 CELERY_BEAT_SCHEDULE = {
     'check_upload': {
         "task": "geokincia.dataset.check_upload",
-        "schedule": crontab(minute="*/3"),
+        "schedule": crontab(minute="*/5"),
     },
 }
 
