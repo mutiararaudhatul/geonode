@@ -268,13 +268,13 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
                 updated_rows = list(filter(lambda r: r[index_id] and (r[index_update] or r[index_att] or
                     (r[index_updated_at] and datetime.strptime(r[index_updated_at], '%Y-%m-%dT%H:%M:%S') > date_compare)), rows))
             else:
-                updated_rows = list(filter(lambda r: r[index_id] and r[index_update], rows))
+                updated_rows = list(filter(lambda r: r[index_id] and (r[index_update] or r[index_att]), rows))
         else:
             if is_updated_at:
                 inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update] or r[index_att] or
                 (r[index_updated_at] and datetime.strptime(r[index_updated_at], '%Y-%m-%dT%H:%M:%S') > date_compare), rows))
             else:
-                inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update], rows))
+                inserted_rows = list(filter(lambda r: not r[index_id] or r[index_update] or r[index_att], rows))
             updated_rows = []
 
     for c_index in remove_columns:
