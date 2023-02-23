@@ -164,7 +164,7 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
         return row
 
     if target_geom[1] != src_geom[1]:
-        logger.debug(f'geometry beda')
+        logger.debug(f'geometry beda {target_geom[1]} {src_geom[1]}')
         raise Exception
     if target_geom[0]+target_geom[1] == src_geom[0]+src_geom[1]:
         return rows
