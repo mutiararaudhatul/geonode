@@ -2,6 +2,9 @@ from django.conf import settings
 
 from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.geoserver.createlayer.utils import create_dataset
+from geonode.security.permissions import PermSpec, PermSpecCompact
+from django.contrib.auth.models import Group
+
 from . import db_utils
 from requests.auth import HTTPBasicAuth
 from datetime import date, datetime
@@ -67,6 +70,16 @@ def process_csv(csv_file, user, layer_id):
     if not user_collector.intermediate_dataset_name:
             #if not sync create dataset
         new_dataset = create_new_collector_dataset(layer, user_collector.user.username)
+        anon_group = Group.objects.get(name='anonymous')
+
+        perms_spec_compact_patch = PermSpecCompact(
+            {'users': [{'id': user_collector.user.id, 'permissions':'edit'}],
+             'groups': [{'id': anon_group.id, 'permissions': '' }]}, new_dataset)
+        perms_spec = PermSpec(layer.get_all_level_info(), layer)
+        perms_spec_compact_resource = PermSpecCompact(perms_spec.compact, new_dataset)
+        perms_spec_compact_resource.merge(perms_spec_compact_patch)
+        new_dataset.set_permissions(perm_spec=perms_spec_compact_resource.extended)
+
         target_layer = new_dataset.name
         user_collector.intermediate_dataset_name = target_layer
         user_collector.save()
