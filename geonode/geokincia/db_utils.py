@@ -128,7 +128,7 @@ def update_row(conn_name, table_name, columns, values, col_id, col_id_value, add
     update_values = []
     for i in range(len(columns)):
         value = ''
-        if values[i]:
+        if values[i] and (type(values[i]) == str or type(values[i]) == bytes):
             value = re.sub("'", "''", values[i])
             value = html.escape(html.unescape(value), quote=False)
         value = f'"{columns[i]}"=null' if values[i] is None else "\"%s\"='%s'" % (columns[i], value)

@@ -244,6 +244,7 @@ def delete_file_task(self, storage_provider, filename):
         else:
             os.remove(f_path)
     except:
+        logger.debug(traceback.format_exc())
         pass
 
 @app.task(
@@ -266,7 +267,10 @@ def merge_dataset_task(self, dataset_id, uc_dataset):
         return
     for intermediate_dataset_name in uc_dataset:
         if intermediate_dataset_name:
-            db_utils.copy_table('datastore', intermediate_dataset_name, layer.name)
-            delete_dataset.delay(intermediate_dataset_name)
+            try:
+                db_utils.copy_table('datastore', intermediate_dataset_name, layer.name)
+                delete_dataset.delay(intermediate_dataset_name)
+            except:
+                logger.debug(traceback.format_exc())
     utils.truncate_geoserver_cache(layer.workspace, layer.name)
 
