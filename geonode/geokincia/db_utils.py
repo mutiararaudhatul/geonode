@@ -3,6 +3,7 @@ from django.conf import settings
 from datetime import datetime, timedelta
 from PIL import Image
 
+import html
 import re
 import csv
 import os
@@ -116,7 +117,7 @@ def get_primary_key(conn_name, table_name):
 
 def insert_row(conn_name, table_name, colums, values, add_multi=None, target_geo='', geo_value=''):
     colums_txt = ','.join([ '"%s"' % c for c in colums])
-    values_txt = ','.join(['null' if v is None else "'%s'" % re.sub(r"'", "''", v) for v in values])
+    values_txt = ','.join(['null' if v is None else "'%s'" % html.escape(re.sub(r"'", "''", v), quote=False) for v in values])
     if add_multi:
         q = 'insert into "%s"("%s", %s) values(st_multi(\'%s\'), %s)' % (table_name, target_geo, colums_txt, geo_value, values_txt)
     else:
@@ -126,7 +127,11 @@ def insert_row(conn_name, table_name, colums, values, add_multi=None, target_geo
 def update_row(conn_name, table_name, columns, values, col_id, col_id_value, add_multi=None, target_geo='', geo_value=''):
     update_values = []
     for i in range(len(columns)):
-        value = f'"{columns[i]}"=null' if values[i] is None else "\"%s\"='%s'" % (columns[i], values[i])
+        value = ''
+        if values[i]:
+            value = re.sub("'", "''", values[i])
+            value = html.escape(html.unescape(value), quote=False)
+        value = f'"{columns[i]}"=null' if values[i] is None else "\"%s\"='%s'" % (columns[i], value)
         update_values.append(value)
 
     q = "update \"%s\" set %s where \"%s\"='%s' " % (table_name, ','.join(update_values), col_id, col_id_value)
