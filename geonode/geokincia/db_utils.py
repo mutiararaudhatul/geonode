@@ -127,10 +127,12 @@ def insert_row(conn_name, table_name, colums, values, add_multi=None, target_geo
 def update_row(conn_name, table_name, columns, values, col_id, col_id_value, add_multi=None, target_geo='', geo_value=''):
     update_values = []
     for i in range(len(columns)):
-        value = ''
+        value = None
         if values[i] and (type(values[i]) == str or type(values[i]) == bytes):
             value = re.sub("'", "''", values[i])
             value = html.escape(html.unescape(value), quote=False)
+        elif values[i]:
+            value = values[i]
         value = f'"{columns[i]}"=null' if values[i] is None else "\"%s\"='%s'" % (columns[i], value)
         update_values.append(value)
 
