@@ -117,23 +117,29 @@ def get_primary_key(conn_name, table_name):
 
 def insert_row(conn_name, table_name, colums, values, add_multi=None, target_geo='', geo_value=''):
     colums_txt = ','.join([ '"%s"' % c for c in colums])
-    values_txt = ','.join(['null' if v is None else "'%s'" % html.escape(re.sub(r"'", "''", v), quote=False) for v in values])
+    values_txt = ','.join(['null' if v is None else "'%s'" % html.escape(re.sub(r"'", "''", v), quote=False) for v in values[1:]])
+    values_txt = "st_astext(st_force2d('%s')), %s" % (values[0], values_txt)
     if add_multi:
         q = 'insert into "%s"("%s", %s) values(st_multi(\'%s\'), %s)' % (table_name, target_geo, colums_txt, geo_value, values_txt)
     else:
         q = 'insert into "%s"(%s) values(%s)' % (table_name, colums_txt, values_txt)
     execute_query(conn_name,q, None, False)
 
-def update_row(conn_name, table_name, columns, values, col_id, col_id_value, add_multi=None, target_geo='', geo_value=''):
+def update_row(conn_name, table_name, columns, values, col_id, col_id_value, add_multi=None, target_geo='', geo_value='', force2d=False):
     update_values = []
-    for i in range(len(columns)):
+    if force2d:
+        irange = range(1, len(columns))
+        update_values.append(f'"{columns[0]}"= st_astext(st_force2d(\'{values[0]}\'))')
+    else:
+        irange = range(len(columns))
+    for i in irange:
         value = None
         if values[i] and (type(values[i]) == str or type(values[i]) == bytes):
             value = re.sub("'", "''", values[i])
             value = html.escape(html.unescape(value), quote=False)
         elif values[i]:
             value = values[i]
-        value = f'"{columns[i]}"=null' if values[i] is None else "\"%s\"='%s'" % (columns[i], value)
+        value = f'"{columns[i]}"=null' if not values[i] else "\"%s\"='%s'" % (columns[i], value)
         update_values.append(value)
 
     q = "update \"%s\" set %s where \"%s\"='%s' " % (table_name, ','.join(update_values), col_id, col_id_value)
@@ -340,7 +346,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         row.append(user)
         row.append(datetime.now().strftime('%Y-%m-%d'))
         try:
-            update_row(conn_name, src_table, final_header, row, '___id', row[index_id])
+            update_row(conn_name, src_table, final_header, row, '___id', row[index_id], force2d=True)
         except:
             logger.debug(f'fail to update {src_table} value:')
             logger.debug(f'{row}')
@@ -374,7 +380,7 @@ def copy_table(conn_name, src_table, target_table):
         try:
             existing_att_field = execute_query(conn_name,
                     'select "___att" from "%s" where "___id"=\'%s\'' % (target_table, row[index_id]), None, True)[0]['___att']
-            existing_att_field = existing_att_field.strip()
+            existing_att_field = existing_att_field.strip() if existing_att_field else ''
         except:
             logger.debug(f'current record or att not found {row[index_id]}')
             continue
