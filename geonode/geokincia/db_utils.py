@@ -316,8 +316,11 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         row.append(datetime.now().strftime('%Y-%m-%d'))
         row.append(user)
         row.append(datetime.now().strftime('%Y-%m-%d'))
-        
-        insert_row(conn_name, target_table, final_header, row)
+        try:
+            insert_row(conn_name, target_table, final_header, row)
+        except:
+            logger.debug(f'fail to insert to {target_table} value:')
+            logger.debug(f'{row}')
 
     final_header = [h for h in header] + ['updated_by', 'updated_at']
     
@@ -336,7 +339,11 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         row[index_update] = None
         row.append(user)
         row.append(datetime.now().strftime('%Y-%m-%d'))
-        update_row(conn_name, src_table, final_header, row, '___id', row[index_id])
+        try:
+            update_row(conn_name, src_table, final_header, row, '___id', row[index_id])
+        except:
+            logger.debug(f'fail to update {src_table} value:')
+            logger.debug(f'{row}')
 
 def copy_table(conn_name, src_table, target_table):
     columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
