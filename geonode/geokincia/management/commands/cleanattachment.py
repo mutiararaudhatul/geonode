@@ -2,7 +2,7 @@ from selectors import EpollSelector
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from geonode.geokincia import db_utils
-from genode.layers.models import Dataset
+from geonode.layers.models import Dataset
 import os
 import traceback
 
@@ -11,10 +11,11 @@ class Command(BaseCommand):
             "Hapus file attachment yang tidak terpakai"
         )
 
-    def _process_table(all_att_files, name):
+    def _process_table(self, all_att_files, name):
         q = 'select "___att" from "%s"' % name
         for att in db_utils.execute_query('datastore', q, None, True,False):
-            for att_pair in att[0].split(';'):
+            _att = att[0].split(';') if att[0] else [] 
+            for att_pair in _att:
                 if len(att_pair) > 0:
                     att_pair_name = att_pair.split('#')
                     if len(att_pair_name) > 0:
@@ -39,6 +40,7 @@ class Command(BaseCommand):
                 print(f'{os.path.join(att_dir, name)}')
             else:
                 try:
+                    print(f'deleting {os.path.join(att_dir, name)}')
                     os.remove(os.path.join(att_dir, name))
                 except:
                     print(f'\tFail to delete file {name}')

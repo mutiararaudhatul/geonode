@@ -318,10 +318,16 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         if name_att:
             row[index_att] = process_attachment(row[index_att], basedir)
         row[index_update] = None
-        row.append(user)
-        row.append(datetime.now().strftime('%Y-%m-%d'))
-        row.append(user)
-        row.append(datetime.now().strftime('%Y-%m-%d'))
+        if not row[index_id]:
+            row.append(user)
+            row.append(datetime.now().strftime('%Y-%m-%d'))
+            row.append(None)
+            row.append(None)
+        else:
+            row.append(None)
+            row.append(None)
+            row.append(user)
+            row.append(datetime.now().strftime('%Y-%m-%d'))
         try:
             insert_row(conn_name, target_table, final_header, row)
         except:
