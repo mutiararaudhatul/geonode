@@ -1,7 +1,7 @@
 from django.db import connections
 from django.conf import settings
 from datetime import datetime, timedelta
-from PIL import Image
+from PIL import Image, ImageOps
 
 import html
 import re
@@ -23,6 +23,7 @@ def resize_image(src):
     target = os.path.join(settings.GEOKINCIA['ATTACHMENT_DIR'], f)
     try:
         with Image.open(src) as img:
+            img = ImageOps.exif_transpose(img)
             x, y = img.size
             ratio = IMG_SIZE / min(x,y)
             img = img.resize((int(x * ratio), int(y * ratio)))
