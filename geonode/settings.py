@@ -2250,6 +2250,7 @@ CELERY_BEAT_SCHEDULE = {
 GEOKINCIA = {
     'ATTACHMENT_DIR': STATIC_ROOT + '/attachment',
     'MAX_SECONDS_DOWNLOAD_WAIT': 7200,
+    'MAX_ATTACHMENT': int(os.environ.get('MAX_ATTACHMENT', 0)),
     'STORAGE': {
         'GOOGLE_DRIVE': {
             'CLASS_NAME': 'geonode.geokincia.storage.gdrive.GDriveStorage',

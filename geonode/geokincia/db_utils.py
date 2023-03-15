@@ -1,5 +1,6 @@
 from django.db import connections
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from datetime import datetime, timedelta
 from PIL import Image, ImageOps
 
@@ -18,9 +19,9 @@ IMG_SIZE = 720
 
 logger = logging.getLogger(__name__)
 
-def resize_image(src):
-    base, f = os.path.split(src)
-    target = os.path.join(settings.GEOKINCIA['ATTACHMENT_DIR'], f)
+def resize_image(src, target):
+    if os.path.exists(target):
+        return
     try:
         with Image.open(src) as img:
             img = ImageOps.exif_transpose(img)
@@ -29,9 +30,9 @@ def resize_image(src):
             img = img.resize((int(x * ratio), int(y * ratio)))
             img.save(target, optimize=True, quality=90)
     except:
-        shutil.copy2(src, settings.GEOKINCIA['ATTACHMENT_DIR'])
+        shutil.copy2(src, target)
 
-def process_attachment(attachment='', cwd='.', existing_attachment=''):
+def process_attachment(attachment='', cwd='.', existing_attachment='', user=''):
     if not attachment or len(attachment.strip()) == 0:
          return existing_attachment
     new_attachments = []
@@ -46,6 +47,8 @@ def process_attachment(attachment='', cwd='.', existing_attachment=''):
     for att in attachment.strip().split(','):
         origin = os.path.join(cwd, att.strip())
         base, f = os.path.split(origin)
+        f = user + '_' + f
+        target = os.path.join(attachment_dir, f)
         if not os.path.exists(origin):
             continue
         if not f in existing_attachments_files:
@@ -53,17 +56,22 @@ def process_attachment(attachment='', cwd='.', existing_attachment=''):
             _,ext = os.path.splitext(origin)
             if ext in PHOTO_EXT:
                 f_prop += '#photo'
-                resize_image(origin)
+                resize_image(origin, target)
             elif ext in VIDEO_EXT:
                 f_prop += '#video'
-                shutil.copy2(origin, attachment_dir)
+                if not os.path.exists(target):
+                    shutil.copy2(origin, target)
             else:
                 continue
-            stat = os.stat(origin)
+            stat = os.stat(target)
             f_prop += f'#{datetime.fromtimestamp(stat.st_atime).strftime("%a %d-%m-%Y")}'
             new_attachments.append(f_prop)
-    logger.debug(f'process_attachment {";".join(new_attachments + existing_attachments)}')
-    return ';'.join(new_attachments + existing_attachments)
+    
+    all_att = new_attachments + existing_attachments
+    if settings.GEOKINCIA['MAX_ATTACHMENT'] > 0:
+        all_att = all_att[:settings.GEOKINCIA['MAX_ATTACHMENT']]
+    logger.debug(f'process_attachment {";".join(all_att)}')
+    return ';'.join(all_att)
 
 
 def dictfetchall(cursor):
@@ -163,6 +171,8 @@ def delete_table(conn_name, table):
 
 def update_csv_geom(target_geom, src_geom, rows, index_geom):
     logger.debug(index_geom)
+    for i in range(len(rows)):
+        rows[i][index_geom] = re.sub(r'[Nn][Aa][Nn]', '0', rows[i][index_geom])
     def _to_multi(row):
         coord_pair = re.findall(r'(\([0-9.,() \-Nan]*\))', row[index_geom])[0]
         geo_type = re.findall(r'(LINESTRING|POINT|POLYGON)', row[index_geom])[0]
@@ -190,6 +200,14 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
         return list(map(_to_single, rows))
 
 def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is_init=False, user=''):
+    user_id = user
+    if user:
+        try:
+            user_model = get_user_model().objects.get(username=user)
+            user_id = str(user_model.id)
+        except:
+            pass
+
     rows = []
     header = []
     with open(csv_file, 'r') as f:
@@ -246,7 +264,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         logger.debug(f'too many remove columns. probably wrong dataset')
         raise Exception
 
-    rem_cols = ['___att', 'updated_by', 'lastupdate', 'created_by', 'created_at', 'updated_at']
+    rem_cols = ['___att', 'created_by', 'created_at', 'updated_at', 'updated_by']
     for col in rem_cols:
         try:
             remove_columns.append(header.index(col))
@@ -261,7 +279,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     index_updated_at = -1
     index_id = header.index('___id')
     index_update = header.index('___update')
-    date_compare = datetime.now() - timedelta(days=365)
+    date_compare = datetime.now() - timedelta(days=730)
 
     if name_att:
         index_att = header.index(name_att)
@@ -304,6 +322,8 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         excl_upper_row_index.append(index_att) 
     index_id = header.index('___id')
     index_update = header.index('___update')
+    if is_updated_at:
+        index_updated_at = header.index('lastupdate')
     header[index_att] = '___att'
     excl_upper_row_index.append(index_id)
     basedir = os.path.dirname(csv_file)
@@ -317,18 +337,22 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
             if i not in excl_upper_row_index and row[i]:
                 row[i] = row[i].strip().upper()
         if name_att:
-            row[index_att] = process_attachment(row[index_att], basedir)
-        row[index_update] = None
+            row[index_att] = process_attachment(attachment=row[index_att], cwd=basedir, user=user_id)
+        update_at = datetime.strptime(row[index_updated_at], '%Y-%m-%dT%H:%M:%S') if is_updated_at else datetime.now()
+        if update_at < date_compare:
+            update_at = datetime.now()
         if not row[index_id]:
             row.append(user)
-            row.append(datetime.now().strftime('%Y-%m-%d'))
+            row.append(update_at.strftime('%Y-%m-%d'))
             row.append(None)
             row.append(None)
         else:
             row.append(None)
             row.append(None)
             row.append(user)
-            row.append(datetime.now().strftime('%Y-%m-%d'))
+            row.append(update_at.strftime('%Y-%m-%d'))
+        row[index_update] = None
+        row[index_updated_at] = None
         try:
             insert_row(conn_name, target_table, final_header, row)
         except:
@@ -347,11 +371,15 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         existing_att = execute_query(conn_name,
                 'select "___att" from "%s" where "___id"=\'%s\'' % (src_table, row[index_id]), None, True)
         if name_att:
-            row[index_att] = process_attachment(row[index_att], basedir, existing_att[0]['___att'])
+            row[index_att] = process_attachment(attachment=row[index_att], cwd=basedir, existing_attachment=existing_att[0]['___att'], user=user_id)
         logger.debug(f'try to update {row}')
+        update_at = datetime.strptime(row[index_updated_at], '%Y-%m-%dT%H:%M:%S') if is_updated_at else datetime.now()
+        if update_at < date_compare:
+            update_at = datetime.now()
         row[index_update] = None
+        row[index_updated_at] = None
         row.append(user)
-        row.append(datetime.now().strftime('%Y-%m-%d'))
+        row.append(update_at.strftime('%Y-%m-%d'))
         try:
             update_row(conn_name, src_table, final_header, row, '___id', row[index_id], force2d=True)
         except:
@@ -395,9 +423,11 @@ def copy_table(conn_name, src_table, target_table):
         existing_att = [att for att in existing_att_field.split(';')]
         new_att = [att for att in row[index_att].split(';')]
         merge_att = list(filter(lambda r: r is not None, [ None if att in existing_att else att for att in new_att]))
-
+        all_att = merge_att + existing_att
+        if settings.GEOKINCIA['MAX_ATTACHMENT'] > 0:
+            all_att = all_att[:settings.GEOKINCIA['MAX_ATTACHMENT']]
         wk_row = list(row)
-        wk_row[index_att] = ';'.join(merge_att + existing_att)
+        wk_row[index_att] = ';'.join(all_att)
         logger.debug(f'try to update {wk_row}')
         wk_cols = columns + ['updated_by', 'updated_at', target_geo]
         if is_updated_by:
