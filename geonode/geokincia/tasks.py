@@ -19,6 +19,7 @@ from . import utils
 
 import os
 import traceback
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -135,9 +136,22 @@ def process_uploaded_data_task(self, storage_provider):
 
     for layer_dir in os.listdir(upload_dir):
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
-            for uploaded in os.listdir(os.path.join(upload_dir, layer_dir, user_dataset)):
+            uploaded_list = os.listdir(os.path.join(upload_dir, layer_dir, user_dataset))
+            for uploaded in uploaded_list:
                 remote_path = os.path.join(remote_dir, layer_dir, user_dataset, uploaded)
                 uploaded_path = os.path.join(upload_dir, layer_dir, user_dataset, uploaded)
+                if uploaded.endswirt('.zip'):
+                    tempdir = tempfile.mkdtemp()
+                    zf = zipfile.Zip(uploaded_path)
+                    zf.extractall(tempdir)
+                    for ef in os.listdir(tempdir):
+                        sdir = os.path.join(temdir, ef)
+                        if os.path.isdir(sdir) and not os.path.exists(os.path.join(upload_dir, layer_dir, user_dataset, ef)):
+                            shutil.copytree(sdir, os.path.join(upload_dir, layer_dir, user_dataset, ef))
+                            uploaded_list.append(ef)
+                    shutil.rmtree(tempdir)
+                    continue
+
                 if not uploaded.startswith('___processed_') and os.path.isdir(uploaded_path):
                     try:
                         csv = list(filter(lambda f: f.lower().endswith('.csv'), os.listdir(uploaded_path)))
