@@ -20,6 +20,7 @@ from . import utils
 import os
 import traceback
 import tempfile
+import zipfile
 
 logger = logging.getLogger(__name__)
 
@@ -144,17 +145,21 @@ def process_uploaded_data_task(self, storage_provider):
                     logger.info(f'found zip: {uploaded}')
                     try:
                         tempdir = tempfile.mkdtemp()
-                        zf = zipfile.Zip(uploaded_path)
+                        zf = zipfile.ZipFile(uploaded_path)
                         zf.extractall(tempdir)
                         for ef in os.listdir(tempdir):
                             sdir = os.path.join(tempdir, ef)
-                            if os.path.isdir(sdir) and not os.path.exists(os.path.join(upload_dir, layer_dir, user_dataset, ef)):
-                                shutil.copytree(sdir, os.path.join(upload_dir, layer_dir, user_dataset, ef))
-                                uploaded_list.append(ef)
+                            logger.info(f'extracted file: {ef}')
+                            target = ef + '___extracted'
+                            if os.path.isdir(sdir) and not os.path.exists(os.path.join(upload_dir, layer_dir, user_dataset, target)):
+                                shutil.copytree(sdir, os.path.join(upload_dir, layer_dir, user_dataset, target))
+                                uploaded_list.append(target)
                         shutil.rmtree(tempdir)
                         storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')
                         continue
                     except:
+                        if os.path.exists(tempdir):
+                            shutil.rmtree(tempdir)
                         logger.debug(traceback.format_exc())
                         if os.path.exists(uploaded_path + '.control'):
                             with open(uploaded_path + '.control', 'r') as cf:
@@ -165,7 +170,6 @@ def process_uploaded_data_task(self, storage_provider):
                         else:
                             with open(uploaded_path + '.control', 'w') as cf:
                                 cf.write(str(int(datetime.now().timestamp())))
-
 
                 if not uploaded.startswith('___processed_') and os.path.isdir(uploaded_path):
                     try:
@@ -202,11 +206,17 @@ def process_uploaded_data_task(self, storage_provider):
                                 continue
 
                         utils.process_csv(csv_file, user_dataset.split('_')[-1], int(layer_dir.split('_')[-1]))
-                        storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')
+                        if uploaded.endswith('___extracted'):
+                            shutil.rmtree(uploaded_path)
+                        else:
+                            storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')
                     except:
                         logger.warning(f'fail to processed uploaded dataset')
                         logger.debug(traceback.format_exc())
-                        storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_error')
+                        if uploaded.endswith('___extracted'):
+                            shutil.rmtree(uploaded_path)
+                        else:
+                            storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_error')
                         send_email(f'{storage_provider} Pull dataset gagal ',
                                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 
