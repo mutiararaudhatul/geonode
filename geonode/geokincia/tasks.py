@@ -140,17 +140,32 @@ def process_uploaded_data_task(self, storage_provider):
             for uploaded in uploaded_list:
                 remote_path = os.path.join(remote_dir, layer_dir, user_dataset, uploaded)
                 uploaded_path = os.path.join(upload_dir, layer_dir, user_dataset, uploaded)
-                if uploaded.endswirt('.zip'):
-                    tempdir = tempfile.mkdtemp()
-                    zf = zipfile.Zip(uploaded_path)
-                    zf.extractall(tempdir)
-                    for ef in os.listdir(tempdir):
-                        sdir = os.path.join(temdir, ef)
-                        if os.path.isdir(sdir) and not os.path.exists(os.path.join(upload_dir, layer_dir, user_dataset, ef)):
-                            shutil.copytree(sdir, os.path.join(upload_dir, layer_dir, user_dataset, ef))
-                            uploaded_list.append(ef)
-                    shutil.rmtree(tempdir)
-                    continue
+                if uploaded.endswith('.zip'):
+                    logger.info(f'found zip: {uploaded}')
+                    try:
+                        tempdir = tempfile.mkdtemp()
+                        zf = zipfile.Zip(uploaded_path)
+                        zf.extractall(tempdir)
+                        for ef in os.listdir(tempdir):
+                            sdir = os.path.join(tempdir, ef)
+                            if os.path.isdir(sdir) and not os.path.exists(os.path.join(upload_dir, layer_dir, user_dataset, ef)):
+                                shutil.copytree(sdir, os.path.join(upload_dir, layer_dir, user_dataset, ef))
+                                uploaded_list.append(ef)
+                        shutil.rmtree(tempdir)
+                        storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')
+                        continue
+                    except:
+                        logger.debug(traceback.format_exc())
+                        if os.path.exists(uploaded_path + '.control'):
+                            with open(uploaded_path + '.control', 'r') as cf:
+                                control = int(cf.readline().strip())
+                                td = datetime.now() - datetime.fromtimestamp(control)
+                                if td.total_seconds() > int(settings.GEOKINCIA['MAX_SECONDS_DOWNLOAD_WAIT']):
+                                    storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_error')
+                        else:
+                            with open(uploaded_path + '.control', 'w') as cf:
+                                cf.write(str(int(datetime.now().timestamp())))
+
 
                 if not uploaded.startswith('___processed_') and os.path.isdir(uploaded_path):
                     try:
