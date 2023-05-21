@@ -31,8 +31,10 @@ def get_attachments(request, table, nid, id):
         _attachments = ret[0][0].split(';')
         attachments = []
         for _att in _attachments:
-            attr = _att.split('#')
-            attachments.append({'url': f'/static/attachment/{attr[0]}', 'type': attr[1], 'tanggal': attr[2]})
+            if _att:
+                attr = _att.split('#')
+                if attr and len(attr) > 2:
+                    attachments.append({'url': f'/static/attachment/{attr[0]}', 'type': attr[1], 'tanggal': attr[2]})
         return HttpResponse(json.dumps(attachments), content_type='application/json')
     except:
             return HttpResponse(status=404)

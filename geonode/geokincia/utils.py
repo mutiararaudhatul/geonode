@@ -105,7 +105,7 @@ def create_new_collector_dataset(layer, username):
     'xsd:double': 'float', 'xsd:date': 'date', 'xsd:decimal': 'float'}
     ATTRIBUTE_GEO_PREFIX = 'gml:'
     pri_key = db_utils.get_primary_key('datastore', layer.name)
-    ATTRIBUTE_SKIP = ('___update', '___id', '___att', 'created_by', 'created_at', 'updated_by', 'updated_at', 'lastupdate', pri_key)
+    ATTRIBUTE_SKIP = ('___url_att', '___update', '___id', '___att', 'created_by', 'created_at', 'updated_by', 'updated_at', 'lastupdate', pri_key)
     ATTRIBUTE_GEO_TYPES = r'(MultiPolygon|Polygon|MultiLineString|LineString|MultiPoint|Point)'
     geometry_type = ''
     attributes = {}

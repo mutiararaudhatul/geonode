@@ -201,11 +201,15 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
         return list(map(_to_single, rows))
 
 def update_url_att(conn_name, primary_field, target_table):
-    if not primary_field:
-        primary_field = get_primary_key(conn_name, target_table)
-    execute_query(conn_name,
-                  f'''update "{target_table}" set "___url_att"='{settings.SITEURL}static/viewer/index.html?t={target_table}&n={primary_field}&i=' || id 
-                  where "___att" <> '' and ("___url_att" = '') is not false''', None, False, False)
+    try:
+        if not primary_field:
+            primary_field = get_primary_key(conn_name, target_table)
+        execute_query(conn_name,
+                    f'''update "{target_table}" set "___url_att"='{settings.SITEURL}static/viewer/index.html?t={target_table}&n={primary_field}&i=' || {primary_field} 
+                    where "___att" <> '' and ("___url_att" = '') is not false''', None, False, False)
+    except:
+        logger.debug(f'error updating url att')
+        pass
     
 def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is_init=False, user=''):
     user_id = user
@@ -404,7 +408,10 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
 
 def copy_table(conn_name, src_table, target_table):
     columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
-    columns.remove('___url_att')
+    try:
+        columns.remove('___url_att')
+    except:
+        pass
     is_updated_by = False
 
     if 'lastupdate' in columns:
