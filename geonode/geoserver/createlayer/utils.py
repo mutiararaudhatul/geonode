@@ -135,6 +135,7 @@ def get_attributes(geometry_type, json_attrs=None, is_slug=True):
     lattrs.append(['___update', f'java.lang.String', {'nillable': True}])
     lattrs.append(['___id', f'java.lang.String', {'nillable': True}])
     lattrs.append(['___att', f'java.lang.String', {'nillable': True}])
+    lattrs.append(['___url_att', f'java.lang.String', {'nillable': True}])
     lattrs.append(['lastupdate', f'java.util.Date', {'nillable': True}])
     if json_attrs:
         jattrs = json.loads(json_attrs)

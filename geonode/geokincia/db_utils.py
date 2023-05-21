@@ -11,6 +11,7 @@ import os
 import shutil
 import uuid
 import logging
+import base64
 
 ATTACHMENT = ('attachment', 'Attachment', 'attachments', 'Attachments')
 PHOTO_EXT = ['.png', '.jpg', '.jpeg', '.svg']
@@ -199,6 +200,13 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
     elif target_geom[0] != 'MULTI' and src_geom[0] == 'MULTI':
         return list(map(_to_single, rows))
 
+def update_url_att(conn_name, primary_field, target_table):
+    if not primary_field:
+        primary_field = get_primary_key(conn_name, target_table)
+    execute_query(conn_name,
+                  f'''update "{target_table}" set "___url_att"='{settings.SITEURL}static/viewer/index.html?t={target_table}&n={primary_field}&i=' || id 
+                  where "___att" <> '' and ("___url_att" = '') is not false''', None, False, False)
+    
 def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is_init=False, user=''):
     user_id = user
     if user:
@@ -250,8 +258,10 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     if name_att:
         target_columns.append(name_att)
     
+    primary_field = None
     try:
-        remove_columns.append(header.index(get_primary_key(conn_name, target_table)))
+        primary_field = get_primary_key(conn_name, target_table)
+        remove_columns.append(header.index(primary_field))
     except:
         pass
     target_columns.insert(index_geom, header[0])
@@ -264,7 +274,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         logger.debug(f'too many remove columns. probably wrong dataset')
         raise Exception
 
-    rem_cols = ['___att', 'created_by', 'created_at', 'updated_at', 'updated_by']
+    rem_cols = ['___att', 'created_by', 'created_at', 'updated_at', 'updated_by', '___url_att']
     for col in rem_cols:
         try:
             remove_columns.append(header.index(col))
@@ -359,11 +369,15 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
             logger.debug(f'fail to insert to {target_table} value:')
             logger.debug(f'{row}')
 
+    if len(inserted_rows) > 0:
+        update_url_att(conn_name, primary_field, target_table)
+    
     final_header = [h for h in header] + ['updated_by', 'updated_at']
     
     if is_sync:
         src_geo = get_geom_column(conn_name, src_table)['f_geometry_column']
         final_header[0] = src_geo
+    
     for row in updated_rows:
         for i in range(len(row)):
             if i not in excl_upper_row_index and row[i]:
@@ -385,10 +399,12 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
         except:
             logger.debug(f'fail to update {src_table} value:')
             logger.debug(f'{row}')
+    if len(updated_rows) > 0:
+        update_url_att(conn_name, None, src_table)
 
 def copy_table(conn_name, src_table, target_table):
     columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
-
+    columns.remove('___url_att')
     is_updated_by = False
 
     if 'lastupdate' in columns:
@@ -399,7 +415,8 @@ def copy_table(conn_name, src_table, target_table):
         columns.remove('updated_at')
         columns.remove('created_by')
         columns.remove('created_at')
-    target_primary_index = columns.index(get_primary_key(conn_name, target_table))
+    primary_field = get_primary_key(conn_name, target_table)
+    target_primary_index = columns.index(primary_field)
     columns[target_primary_index:target_primary_index+1] = []
     target_geo = get_geom_column(conn_name, target_table)['f_geometry_column']
     index_att = columns.index('___att')
@@ -444,6 +461,7 @@ def copy_table(conn_name, src_table, target_table):
         (target_table, target_geo, ','.join(final_quote_columns), src_geo, ','.join(final_quote_columns), src_table)
     
     execute_query(conn_name, q, None, False)
+    update_url_att(conn_name, primary_field, target_table)
     logger.debug(f'finish merge')
 
     
