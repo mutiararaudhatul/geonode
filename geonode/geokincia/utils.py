@@ -100,7 +100,7 @@ def process_shp(shp_file):
         raise Exception
 
 
-def create_new_collector_dataset(layer, username):
+def create_new_collector_dataset(layer, username, is_collector_dataset=True, new_name=None):
     ATTRIBUTE_TYPE_MAPPING = {'xsd:string': 'string', 'xsd:int': 'integer', 'xsd:integer': 'integer','xsd:float': 'float', 'xsd:dateTime': 'date', 
     'xsd:double': 'float', 'xsd:date': 'date', 'xsd:decimal': 'float'}
     ATTRIBUTE_GEO_PREFIX = 'gml:'
@@ -122,7 +122,9 @@ def create_new_collector_dataset(layer, username):
 
 #create_dataset(name, title, owner_name, geometry_type, attributes=None)
     gid = layer.group.id if layer.group else None
-    return create_dataset(f'{layer.name}_{username}', f'{layer.title} - {username}', layer.owner.username, geometry_type[0], json.dumps(attributes), True, gid, False)
+    name = new_name if new_name else f'{layer.name}_{username}'
+    title = new_name if new_name else f'{layer.title}_{username}'
+    return create_dataset(name, title, layer.owner.username, geometry_type[0], json.dumps(attributes), is_collector_dataset, gid, False)
 
 def download_source_dataset(ws, name, cwd):
     url = '%swfs?service=wfs&version=1.0.0&request=GetFeature&typeName=%s:%s&outputformat=SHAPE-ZIP' % (settings.GEOSERVER_LOCATION, ws, name)

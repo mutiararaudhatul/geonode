@@ -139,7 +139,7 @@ def process_uploaded_data_task(self, storage_provider):
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
             uploaded_list = os.listdir(os.path.join(upload_dir, layer_dir, user_dataset))
             for uploaded in uploaded_list:
-                remote_path = os.path.join(remote_dir, layer_dir, user_dataset, uploaded)
+                remote_path = f'"os.path.join(remote_dir, layer_dir, user_dataset, uploaded)"'
                 uploaded_path = os.path.join(upload_dir, layer_dir, user_dataset, uploaded)
                 if uploaded.endswith('.zip'):
                     logger.info(f'found zip: {uploaded}')
@@ -155,7 +155,7 @@ def process_uploaded_data_task(self, storage_provider):
                                 shutil.copytree(sdir, os.path.join(upload_dir, layer_dir, user_dataset, target))
                                 uploaded_list.append(target)
                         shutil.rmtree(tempdir)
-                        storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')
+                        storage.rename(remote_path, f'"___processed_{uploaded}_{int(datetime.now().timestamp())}_success"')
                         continue
                     except:
                         if os.path.exists(tempdir):
@@ -166,7 +166,7 @@ def process_uploaded_data_task(self, storage_provider):
                                 control = int(cf.readline().strip())
                                 td = datetime.now() - datetime.fromtimestamp(control)
                                 if td.total_seconds() > int(settings.GEOKINCIA['MAX_SECONDS_DOWNLOAD_WAIT']):
-                                    storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_error')
+                                    storage.rename(remote_path, f'"___processed_{uploaded}_{int(datetime.now().timestamp())}_error"')
                         else:
                             with open(uploaded_path + '.control', 'w') as cf:
                                 cf.write(str(int(datetime.now().timestamp())))
@@ -209,14 +209,14 @@ def process_uploaded_data_task(self, storage_provider):
                         if uploaded.endswith('___extracted'):
                             shutil.rmtree(uploaded_path)
                         else:
-                            storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_success')
+                            storage.rename(remote_path, f'"___processed_{uploaded}_{int(datetime.now().timestamp())}_success"')
                     except:
                         logger.warning(f'fail to processed uploaded dataset')
                         logger.debug(traceback.format_exc())
                         if uploaded.endswith('___extracted'):
                             shutil.rmtree(uploaded_path)
                         else:
-                            storage.rename(remote_path, f'___processed_{uploaded}_{int(datetime.now().timestamp())}_error')
+                            storage.rename(remote_path, f'"___processed_{uploaded}_{int(datetime.now().timestamp())}_error"')
                         send_email(f'{storage_provider} Pull dataset gagal ',
                                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
 

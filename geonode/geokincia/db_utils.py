@@ -406,7 +406,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
     if len(updated_rows) > 0:
         update_url_att(conn_name, None, src_table)
 
-def copy_table(conn_name, src_table, target_table):
+def copy_table(conn_name, src_table, target_table, update_geo=True):
     columns = [c['column_name'] for c in get_column_name(conn_name, target_table)]
     try:
         columns.remove('___url_att')
@@ -433,8 +433,12 @@ def copy_table(conn_name, src_table, target_table):
 
     #update
     final_quote_columns = [h for h in quote_columns] + ['"updated_by"', '"updated_at"']
-    q = '''select %s, "%s" from "%s" where "___id" <> '' ''' % \
-        (','.join(final_quote_columns), src_geo, src_table)
+    if update_geo:
+        q = '''select %s, "%s" from "%s" where "___id" <> '' ''' % \
+            (','.join(final_quote_columns), src_geo, src_table)
+    else:
+        q = '''select %s from "%s" where "___id" <> '' ''' % \
+            (','.join(final_quote_columns), src_table)
     for row in execute_query(conn_name, q, None, True, False):
         try:
             existing_att_field = execute_query(conn_name,
@@ -453,7 +457,9 @@ def copy_table(conn_name, src_table, target_table):
         wk_row = list(row)
         wk_row[index_att] = ';'.join(all_att)
         logger.debug(f'try to update {wk_row}')
-        wk_cols = columns + ['updated_by', 'updated_at', target_geo]
+        wk_cols = columns + ['updated_by', 'updated_at']
+        if update_geo:
+            wk_cols += [target_geo]
         if is_updated_by:
             wk_row.append(None)
             wk_cols = wk_cols + ['lastupdate']
