@@ -123,7 +123,7 @@ def create_new_collector_dataset(layer, username, is_collector_dataset=True, new
 #create_dataset(name, title, owner_name, geometry_type, attributes=None)
     gid = layer.group.id if layer.group else None
     name = new_name if new_name else f'{layer.name}_{username}'
-    title = new_name if new_name else f'{layer.title}_{username}'
+    title = new_name if new_name else f'{layer.title} - {username}'
     return create_dataset(name, title, layer.owner.username, geometry_type[0], json.dumps(attributes), is_collector_dataset, gid, False)
 
 def download_source_dataset(ws, name, cwd):
