@@ -139,7 +139,7 @@ def process_uploaded_data_task(self, storage_provider):
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
             uploaded_list = os.listdir(os.path.join(upload_dir, layer_dir, user_dataset))
             for uploaded in uploaded_list:
-                remote_path = f'"os.path.join(remote_dir, layer_dir, user_dataset, uploaded)"'
+                remote_path = os.path.join(remote_dir, layer_dir, user_dataset, uploaded)
                 uploaded_path = os.path.join(upload_dir, layer_dir, user_dataset, uploaded)
                 if uploaded.endswith('.zip'):
                     logger.info(f'found zip: {uploaded}')
