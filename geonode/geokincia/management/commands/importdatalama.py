@@ -34,6 +34,8 @@ class Command(BaseCommand):
         header.append('___id')
         header.append('___update')
         header.append('___att')
+        header.append('lastupdate')
+        header.append('___url_att')
         header.append('Attachments')
         
         for row in rows:
@@ -56,6 +58,8 @@ class Command(BaseCommand):
             row.append(None)
             row.append(None)
             row.append(str(uuid.uuid4()))
+            row.append(None)
+            row.append(None)
             row.append(None)
             row.append(None)
             row.append(','.join(new_att))

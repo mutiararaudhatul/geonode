@@ -55,6 +55,7 @@ def process_attachment(attachment='', cwd='.', existing_attachment='', user=''):
         if not f in existing_attachments_files:
             f_prop = f
             _,ext = os.path.splitext(origin)
+            ext = ext.lower() if ext else ext
             if ext in PHOTO_EXT:
                 f_prop += '#photo'
                 resize_image(origin, target)
@@ -352,7 +353,10 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
                 row[i] = row[i].strip().upper()
         if name_att:
             row[index_att] = process_attachment(attachment=row[index_att], cwd=basedir, user=user_id)
-        update_at = datetime.strptime(row[index_updated_at], '%Y-%m-%dT%H:%M:%S') if is_updated_at else datetime.now()
+        if row[index_updated_at]:
+            update_at = datetime.strptime(row[index_updated_at], '%Y-%m-%dT%H:%M:%S') if is_updated_at else datetime.now()
+        else:
+            update_at = datetime.now()
         if update_at < date_compare:
             update_at = datetime.now()
         if not row[index_id]:
