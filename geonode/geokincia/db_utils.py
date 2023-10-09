@@ -201,12 +201,18 @@ def update_csv_geom(target_geom, src_geom, rows, index_geom):
     elif target_geom[0] != 'MULTI' and src_geom[0] == 'MULTI':
         return list(map(_to_single, rows))
 
-def update_url_att(conn_name, primary_field, target_table):
+def update_url_att(conn_name, primary_field, target_table, force=False):
     try:
         if not primary_field:
             primary_field = get_primary_key(conn_name, target_table)
-        execute_query(conn_name,
-                    f'''update "{target_table}" set "___url_att"='{settings.SITEURL}static/viewer/index.html?t={target_table}&n={primary_field}&i=' || {primary_field} 
+        if force:
+            execute_query(conn_name,
+                    f'''update "{target_table}" set "___url_att"='{settings.SITEURL}static/viewer/index.html?t={target_table}&n={primary_field}&i=' || {primary_field}
+                    where "___att" <> '' ''', None, False, False)
+
+        else:
+            execute_query(conn_name,
+                    f'''update "{target_table}" set "___url_att"='{settings.SITEURL}static/viewer/index.html?t={target_table}&n={primary_field}&i=' || {primary_field}
                     where "___att" <> '' and ("___url_att" = '') is not false''', None, False, False)
     except:
         logger.debug(f'error updating url att')
