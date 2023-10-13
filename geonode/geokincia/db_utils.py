@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from datetime import datetime, timedelta
 from PIL import Image, ImageOps
+from PIL.ExifTags import TAGS
 
 import html
 import re
@@ -20,18 +21,33 @@ IMG_SIZE = 720
 
 logger = logging.getLogger(__name__)
 
-def resize_image(src, target):
-    if os.path.exists(target):
-        return
+
+def resize_image_and_get_date(src, target):
     try:
         with Image.open(src) as img:
+            if os.path.exists(target):
+                ext = img.getexif()
+                try:
+                    return datetime.strptime(ext[306], '%Y:%m:%d %H:%M:%S')
+                except:
+                    return datetime.now()
             img = ImageOps.exif_transpose(img)
+            
             x, y = img.size
             ratio = IMG_SIZE / min(x,y)
             img = img.resize((int(x * ratio), int(y * ratio)))
-            img.save(target, optimize=True, quality=90)
+            ext = img.getexif()
+            try:
+                img_date = datetime.strptime(ext[306], '%Y:%m:%d %H:%M:%S')
+            except:
+                img_date = datetime.now()
+                ext.update([(306, datetime.now().strftime('%Y:%m:%d %H:%M:%S'))])
+            img.save(target, optimize=True, quality=90, exif=ext)
     except:
         shutil.copy2(src, target)
+        img_date = datetime.now()
+    return img_date
+
 
 def process_attachment(attachment='', cwd='.', existing_attachment='', user=''):
     if not attachment or len(attachment.strip()) == 0:
@@ -58,15 +74,16 @@ def process_attachment(attachment='', cwd='.', existing_attachment='', user=''):
             ext = ext.lower() if ext else ext
             if ext in PHOTO_EXT:
                 f_prop += '#photo'
-                resize_image(origin, target)
+                img_date = resize_image_and_get_date(origin, target)
+                f_prop += f'#{img_date.strftime("%a %d-%m-%Y")}'
             elif ext in VIDEO_EXT:
                 f_prop += '#video'
                 if not os.path.exists(target):
                     shutil.copy2(origin, target)
+                stat = os.stat(target)
+                f_prop += f'#{datetime.fromtimestamp(stat.st_atime).strftime("%a %d-%m-%Y")}'
             else:
                 continue
-            stat = os.stat(target)
-            f_prop += f'#{datetime.fromtimestamp(stat.st_atime).strftime("%a %d-%m-%Y")}'
             new_attachments.append(f_prop)
     
     all_att = new_attachments + existing_attachments
