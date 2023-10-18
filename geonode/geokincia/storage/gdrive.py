@@ -53,7 +53,7 @@ class GDriveStorage(BaseStorage):
         self._execute_command('yes | drive delete -quiet %s' % name, self.cwd)
 
     def download_file(self, name):
-        self._execute_command('drive pull -no-prompt -quiet %s' % name, self.cwd)
+        self._execute_command('drive pull -no-prompt -quiet -ignore-name-clashes %s' % name, self.cwd)
 
     def rename(self, old, new):
         self._execute_command('drive rename  -quiet %s %s' % (old, new), self.cwd)

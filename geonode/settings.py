@@ -111,7 +111,6 @@ DATABASE_URL = os.getenv(
     'DATABASE_URL',
     f'spatialite:///{_DB_PATH}'
 )
-
 if DATABASE_URL.startswith("spatialite"):
     try:
         spatialite_proc = subprocess.run(["spatialite", "-version"], stdout=subprocess.PIPE)
@@ -146,11 +145,9 @@ if 'postgresql' in DATABASE_URL or 'postgis' in DATABASE_URL:
     _db_conf['OPTIONS'].update({
         'connect_timeout': GEONODE_DB_CONN_TOUT,
     })
-
 DATABASES = {
     'default': _db_conf
 }
-
 if os.getenv('DEFAULT_BACKEND_DATASTORE'):
     GEODATABASE_URL = os.getenv('GEODATABASE_URL',
                                 'postgis://\
@@ -2251,6 +2248,7 @@ GEOKINCIA = {
     'ATTACHMENT_DIR': STATIC_ROOT + '/attachment',
     'MAX_SECONDS_DOWNLOAD_WAIT': 7200,
     'MAX_ATTACHMENT': int(os.environ.get('MAX_ATTACHMENT', 0)),
+    'MIN_GEOFENCE_PRIORITY': int(os.environ.get('MIN_GEOFENCE_PRIORITY', 10001)),
     'STORAGE': {
         'GOOGLE_DRIVE': {
             'CLASS_NAME': 'geonode.geokincia.storage.gdrive.GDriveStorage',

@@ -7,7 +7,7 @@ from django.db.models import Q
 from geonode.tasks.tasks import send_email
 from django.contrib.auth import get_user_model
 from geonode.geokincia import db_utils
-from geonode.layers.models import Dataset, UserCollectorStorage
+from geonode.layers.models import Dataset, UserCollectorStorage, UserStorage
 from geonode.base.models import Configuration
 from geonode.layers.tasks import delete_dataset
 from geonode.celery_app import app
@@ -95,14 +95,22 @@ def prepare_dataset_task(self, dataset_id, reupload=False):
     logger.debug(f'user_collectors {len(user_collectors)}')
     for user_collector in user_collectors:
         logger.debug(f'user_collector {user_collector.user.username}')
-        if not user_collector.upload_url:
+        us = UserStorage.objects.filter(user=user_collector.user, dataset=user_collector.dataset)
+        if len(us) < 1:
+        #if not user_collector.upload_url:
             try:
                 folder = layer.name + '_' + str(layer.id) + '/' + layer.name + '_' + user_collector.user.username
                 upload_url = storage.create_folder(folder)
-                user_collector.upload_url = upload_url
-                user_collector.folder = 'upload/' + folder
                 storage.share_file('upload/' + folder, None, 'w')
-                user_collector.save()
+                # user_collector.upload_url = upload_url                
+                # user_collector.folder = 'upload/' + folder
+                # user_collector.save()
+                new_us = UserStorage()
+                new_us.user = user_collector.user
+                new_us.dataset = user_collector.dataset
+                new_us.upload_url = upload_url
+                new_us.folder = 'upload/' + folder
+                new_us.save()
                 send_email(f'Folder Upload Project {layer.title}',
                     f'Berikut adalah folder upload untuk project {layer.title} user {user_collector.user.username} :\n' +
                     f'{upload_url} \nSebelum me-upload silahkan buat shortcut ke home anda',
@@ -135,8 +143,15 @@ def process_uploaded_data_task(self, storage_provider):
     for admin in get_user_model().objects.filter(Q(is_superuser=True) | Q(is_staff=True), is_active=True):
         admins.add(admin.email)
 
+    ds_collectors = Dataset.objects.filter(is_data_collector=True)
+    ds_folder_names = [f'{ds.name}_{ds.id}' for ds in ds_collectors]
     for layer_dir in os.listdir(upload_dir):
+        if layer_dir not in ds_folder_names:
+            continue
+        ds_users = [f'{uc.dataset.name}_{uc.username}' for uc in UserCollectorStorage.objects.filter(Dataset__id=layer_dir.split('_')[-1])]
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
+            if user_dataset not in ds_users:
+                continue
             uploaded_list = os.listdir(os.path.join(upload_dir, layer_dir, user_dataset))
             for uploaded in uploaded_list:
                 remote_path = os.path.join(remote_dir, layer_dir, user_dataset, uploaded)
@@ -213,12 +228,16 @@ def process_uploaded_data_task(self, storage_provider):
                     except:
                         logger.warning(f'fail to processed uploaded dataset')
                         logger.debug(traceback.format_exc())
-                        if uploaded.endswith('___extracted'):
-                            shutil.rmtree(uploaded_path)
-                        else:
-                            storage.rename(remote_path, f'"___processed_{uploaded}_{int(datetime.now().timestamp())}_error"')
-                        send_email(f'{storage_provider} Pull dataset gagal ',
+                        try:
+                            if uploaded.endswith('___extracted'):
+                                shutil.rmtree(uploaded_path)
+                            else:
+                                storage.rename(remote_path, f'"___processed_{uploaded}_{int(datetime.now().timestamp())}_error"')
+                            send_email(f'{storage_provider} Pull dataset gagal ',   
                                 f'{storage_provider} Pull dataset gagal', settings.DEFAULT_FROM_EMAIL, admins, fail_silently=True)
+                        except:
+                            logger.debug(f'Fail to delete or rename error')
+                        
 
 @app.task(
     bind=True,

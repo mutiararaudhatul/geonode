@@ -243,7 +243,7 @@ def purge_geofence_dataset_rules(resource):
             r_ids = []
             if gs_rules and gs_rules['rules']:
                 for r in gs_rules['rules']:
-                    if r['layer'] and r['layer'] == dataset_name:
+                    if r['layer'] and r['layer'] == dataset_name and r['priority'] > settings.GEOKINCIA['MIN_GEOFENCE_PRIORITY']:
                         r_ids.append(r['id'])
 
             # Delete GeoFence Rules associated to the Dataset

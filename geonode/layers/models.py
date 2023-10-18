@@ -572,3 +572,10 @@ class UserCollectorStorage(models.Model):
 
     def __str__(self) -> str:
         return self.user.username + ' | ' + self.upload_url
+    
+class UserStorage(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    storage_name = models.CharField(max_length=200, blank=True, null=True)
+    upload_url = models.CharField(max_length=2000, blank=True, null=True)
+    folder = models.CharField(max_length=400, blank=True, null=True)

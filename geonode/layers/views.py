@@ -72,7 +72,7 @@ from geonode.layers.forms import (
     NewLayerUploadForm)
 from geonode.layers.models import (
     Dataset,
-    Attribute, UserCollectorStorage)
+    Attribute, UserCollectorStorage, UserStorage)
 from geonode.layers.utils import (
     is_sld_upload_only, is_xml_upload_only,
     validate_input_source)
@@ -805,7 +805,11 @@ def dataset_metadata(
                 prepare_dataset_task.delay(layer.id, dataset_form.cleaned_data.get('reupload_this_dataset_as_source'))
                 if uc_dataset:
                     new_uc_ds = [uc.intermediate_dataset_name for uc in UserCollectorStorage.objects.filter(dataset=layer)]
-                    delete_dataset.delay(list(filter(lambda c: c not in new_uc_ds, uc_dataset)))
+                    remove_ds = list(filter(lambda c: c not in new_uc_ds, uc_dataset))
+                    if not dataset_form.cleaned_data.get('not_merge'):
+                        merge_dataset_task.delay(layer.id, remove_ds)
+                    else:
+                        delete_dataset.delay(remove_ds)
             elif uc_dataset and not dataset_form.cleaned_data.get('not_merge'):
                 merge_dataset_task.delay(layer.id, uc_dataset)
             elif uc_dataset and dataset_form.cleaned_data.get('not_merge'):
@@ -838,7 +842,9 @@ def dataset_metadata(
     metadata_author_groups = get_user_visible_groups(request.user)
 
     # user collector upload folder
-    user_collector_folder = [ {'username': uc.user.username, 'url': uc.upload_url} for uc in UserCollectorStorage.objects.filter(dataset__id = layer.id) ]
+    uc_users = [ uc.user for uc in UserCollectorStorage.objects.filter(dataset__id = layer.id) ]
+    user_collector_folder = [ {'username': uc.user.username, 'url': uc.upload_url} for uc in UserStorage.objects.filter(dataset__id = layer.id,
+                                                                                                                        user__in=uc_users) ]
     register_event(request, 'view_metadata', layer)
     return render(request, template, context={
         "user_collector_folder": user_collector_folder,
