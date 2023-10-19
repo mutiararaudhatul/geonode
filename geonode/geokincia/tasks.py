@@ -143,12 +143,12 @@ def process_uploaded_data_task(self, storage_provider):
     for admin in get_user_model().objects.filter(Q(is_superuser=True) | Q(is_staff=True), is_active=True):
         admins.add(admin.email)
 
-    ds_collectors = Dataset.objects.filter(is_data_collector=True)
+    ds_collectors = Dataset.objects.filter(intermediate_storage=storage_provider, is_data_collector=True)
     ds_folder_names = [f'{ds.name}_{ds.id}' for ds in ds_collectors]
     for layer_dir in os.listdir(upload_dir):
         if layer_dir not in ds_folder_names:
             continue
-        ds_users = [f'{uc.dataset.name}_{uc.username}' for uc in UserCollectorStorage.objects.filter(Dataset__id=layer_dir.split('_')[-1])]
+        ds_users = [f'{uc.dataset.name}_{uc.user.username}' for uc in UserCollectorStorage.objects.filter(dataset__id=layer_dir.split('_')[-1])]
         for user_dataset in os.listdir(os.path.join(upload_dir, layer_dir)):
             if user_dataset not in ds_users:
                 continue

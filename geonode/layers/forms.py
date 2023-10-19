@@ -97,7 +97,7 @@ class DatasetForm(ResourceBaseForm):
         widget = forms.CheckboxSelectMultiple, required=False
     )
     reupload_this_dataset_as_source = forms.BooleanField(label=_('Reupload This Dataset As Source'), help_text=_('reupload this dataset'), initial=False, required=False)
-    not_merge = forms.BooleanField(label=_('DO NOT Merge Data When Collector Off'), help_text=_('By default all data will merge'), initial=False, required=False)
+    not_merge = forms.BooleanField(label=_('DO NOT Merge Dataset'), help_text=_('By default all data will merge'), initial=False, required=False)
 
     def clean(self):
         cleaned_data = super().clean()
