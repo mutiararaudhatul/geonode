@@ -22,6 +22,13 @@ IMG_SIZE = 720
 logger = logging.getLogger(__name__)
 
 
+def find_file(directory, filename):
+    f = os.path.basename(filename)
+    for root, dirs, filenames in os.walk(directory):
+        if f in filenames:
+            return os.path.join(root, f)
+    return None
+
 def resize_image_and_get_date(src, target):
     try:
         with Image.open(src) as img:
@@ -62,12 +69,13 @@ def process_attachment(attachment='', cwd='.', existing_attachment='', user=''):
         existing_attachments = existing_attachment.strip().split(';')
         existing_attachments_files = [att.split('#')[0] for att in existing_attachments]
     for att in attachment.strip().split(','):
-        origin = os.path.join(cwd, att.strip())
+        origin = find_file(cwd, att.strip())
+        if not origin:
+            continue
         base, f = os.path.split(origin)
         f = user + '_' + f
         target = os.path.join(attachment_dir, f)
-        if not os.path.exists(origin):
-            continue
+       
         if not f in existing_attachments_files:
             f_prop = f
             _,ext = os.path.splitext(origin)

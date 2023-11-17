@@ -270,9 +270,9 @@ def check_and_process_data_taskk(self):
             if UserCollectorStorage.objects.filter(dataset__intermediate_storage=provider).count() > 0:
                 process_uploaded_data_task(provider)
 
-        os.remove('.check_lock')
     except:
         pass
+    os.remove('.check_lock')
 
 @app.task(
     bind=True,

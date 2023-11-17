@@ -48,7 +48,7 @@ def all_attachment_exists(csv_file):
         for r in processed_csv:
             for att_f in r[index_att].split(','):
                 att_f = att_f.strip()
-                if att_f and not os.path.exists(os.path.join(dirname, att_f)):
+                if att_f and not db_utils.find_file(dirname, att_f):
                     logger.info(f'att check {os.path.join(dirname, att_f)} not found')
                     raise AttachmentNotFound
     return True
