@@ -162,13 +162,20 @@ def process_uploaded_data_task(self, storage_provider):
                         tempdir = tempfile.mkdtemp()
                         zf = zipfile.ZipFile(uploaded_path)
                         zf.extractall(tempdir)
-                        for ef in os.listdir(tempdir):
-                            sdir = os.path.join(tempdir, ef)
-                            logger.info(f'extracted file: {ef}')
-                            target = ef + '___extracted'
-                            if os.path.isdir(sdir) and not os.path.exists(os.path.join(upload_dir, layer_dir, user_dataset, target)):
-                                shutil.copytree(sdir, os.path.join(upload_dir, layer_dir, user_dataset, target))
-                                uploaded_list.append(target)
+                        all_extrated_files = os.listdir(tempdir)
+                        csv_shp = list(filter(lambda f: f.lower().endswith('.csv') or f.lower().endswith('.shp'), all_extrated_files))
+                        if len(csv_shp) > 0:
+                            name = os.path.basename(tempdir)
+                            shutil.copytree(tempdir, os.path.join(upload_dir, layer_dir, user_dataset, name + '___extracted'))
+                            uploaded_list.append(name + '___extracted')
+                        else:
+                            for ef in all_extrated_files:
+                                sdir = os.path.join(tempdir, ef)
+                                logger.info(f'extracted file: {ef}')
+                                target = ef + '___extracted'
+                                if os.path.isdir(sdir) and not os.path.exists(os.path.join(upload_dir, layer_dir, user_dataset, target)):
+                                    shutil.copytree(sdir, os.path.join(upload_dir, layer_dir, user_dataset, target))
+                                    uploaded_list.append(target)
                         shutil.rmtree(tempdir)
                         storage.rename(remote_path, f'"___processed_{uploaded}_{int(datetime.now().timestamp())}_success"')
                         continue
