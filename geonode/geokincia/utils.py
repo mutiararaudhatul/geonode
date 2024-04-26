@@ -102,7 +102,7 @@ def process_shp(shp_file):
 
 def create_new_collector_dataset(layer, username, is_collector_dataset=True, new_name=None):
     ATTRIBUTE_TYPE_MAPPING = {'xsd:string': 'string', 'xsd:int': 'integer', 'xsd:integer': 'integer','xsd:float': 'float', 'xsd:dateTime': 'date', 
-    'xsd:double': 'float', 'xsd:date': 'date', 'xsd:decimal': 'float'}
+    'xsd:double': 'float', 'xsd:date': 'date', 'xsd:decimal': 'float', 'xsd:long': 'long'}
     ATTRIBUTE_GEO_PREFIX = 'gml:'
     pri_key = db_utils.get_primary_key('datastore', layer.name)
     ATTRIBUTE_SKIP = ('___url_att', '___update', '___id', '___att', 'created_by', 'created_at', 'updated_by', 'updated_at', 'lastupdate', pri_key)

@@ -150,7 +150,7 @@ def get_attributes(geometry_type, json_attrs=None, is_slug=True):
                 msg = f'You must provide an attribute name for attribute of type {attr_type}'
                 logger.error(msg)
                 raise GeoNodeException(msg)
-            if attr_type not in ('float', 'date', 'string', 'integer'):
+            if attr_type not in ('float', 'date', 'string', 'integer', 'long'):
                 msg = f'{attr_type} is not a valid type for attribute {attr_name}'
                 logger.error(msg)
                 raise GeoNodeException(msg)
