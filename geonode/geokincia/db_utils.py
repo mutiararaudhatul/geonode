@@ -254,7 +254,7 @@ def load_from_csv(conn_name, csv_file, target_table, is_sync, src_table=None, is
 
     rows = []
     header = []
-    with open(csv_file, 'r') as f:
+    with open(csv_file, 'r', encoding='unicode_escape') as f:
         processed_csv = csv.reader(f, dialect='excel')
         try:
             header = next(processed_csv)

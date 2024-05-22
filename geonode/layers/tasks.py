@@ -22,7 +22,8 @@ from geonode.celery_app import app
 
 from geonode.layers.models import Dataset, UserCollectorStorage
 from geonode.resource.manager import resource_manager
-
+from django.conf import settings
+from geonode.geokincia import utils
 import logging
 logger = logging.getLogger('geonode.geokincia')
 
@@ -64,7 +65,16 @@ def delete_dataset_by_id_or_name(dataset_id_or_name):
     if layer.is_data_collector:
         ds_names = [ uc.intermediate_dataset_name for uc in UserCollectorStorage.objects.filter(dataset=layer) ]
         collector_ds = Dataset.objects.filter(name__in=ds_names)
+        for ds in UserCollectorStorage.objects.filter(dataset__id = layer.id):
+            storage_config = settings.GEOKINCIA['STORAGE']
+            storage = utils.get_class(ds.storage_name)
+            try:
+                logger.info(f'deleting remote folder {ds.folder}')
+                storage.delete(ds.folder)
+            except:
+                logger.error(f'error deleting remote folder {ds.folder} for {ds.dataset.name} - {ds.user.username}')
         for ds in collector_ds:
             resource_manager.delete(ds.uuid)        
         logger.debug(f'Deleting Collector dataset Dataset {layer}')
+
     resource_manager.delete(layer.uuid)
