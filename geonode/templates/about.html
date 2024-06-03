@@ -1,0 +1,21 @@
+{% extends "geonode_base.html" %}
+
+{% load i18n %}
+{% block title %} {% trans "SIRUMAH KITA" %} — {{ block.super }} {% endblock %}
+
+{% block body_outer %}
+<div class="page-header">
+  <h2>{% trans "Aplikasi Geoportal SIRUMAH KITA DPRKP Kota Padang" %}</h2>
+</div>
+<p>
+　　Portal berbasis data spasial. Dikelola Dinas Perumahan Rakyat Kawasan Permukiman Kota Padang
+</p>
+<h2>
+  Petunjuk Penggunaan
+</h2>
+<ul>
+  <li><a href="https://geoportal.perkim.padang.go.id/catalogue/#/document/58">Petunjuk untuk admin data spasial</a></li>
+  <li><a href="https://geoportal.perkim.padang.go.id/catalogue/#/document/59">Petunjuk untuk Surveyor #1</a></li>
+  <li><a href="https://geoportal.perkim.padang.go.id/catalogue/#/document/57">Petunjuk untuk Surveyor #2</a></li>
+</ul>
+{% endblock %}

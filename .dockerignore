@@ -1,0 +1,10 @@
+geonode/uploaded
+geonode/static_root
+geonode/static/.components
+geonode/static/node_modules
+docs
+.coverage
+.celerybeat-*
+
+scripts/spcgeonode/_volume_*
+workdir/*
