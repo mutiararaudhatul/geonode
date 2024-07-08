@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Daftar Artikel</title>
+</head>
+<body>
+    <h1>Daftar Artikel</h1>
+    <ul>
+        {% for artikel in artikel %}
+        <li>{{ artikel.judul }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

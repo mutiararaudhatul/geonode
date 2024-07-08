@@ -16,6 +16,7 @@ x-common-django:
     - tmp:/tmp
     - ${PWD}/workdir:/mnt/volumes/statics/workdir
     - ${PWD}:/usr/src/geonode
+    - ./path_on_host:/usr/src/geonode
   depends_on:
     db:
       condition: service_healthy

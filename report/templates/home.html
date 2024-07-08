@@ -1,0 +1,197 @@
+{% extends 'template_utama.html' %}
+{% load static %}
+{% load bootstrap_filter %}
+
+{% block content %}
+<body>
+
+  <!-- ======= Hero Section ======= -->
+  <section id="hero" class="hero d-flex align-items-center">
+
+    <div class="container">
+      <br><br>
+      <div class="row">
+        <div class="col-lg-7 d-flex flex-column justify-content-center">
+          <h1 data-aos="fade-up">SIRUMAH KITA</h1>
+          <h2 data-aos="fade-up" data-aos-delay="400">Portal berbasis data spasial. Dikelola Dinas Perumahan Rakyat Kawasan Permukiman Kota Padang</h2>
+          <div data-aos="fade-up" data-aos-delay="600" class="d-flex justify-content">
+            <div class="text-center text-lg-start me-3">
+                <a href="https://sirumahkita.padang.go.id/" class="btn-get-eye scrollto d-inline-flex align-items-center justify-content-center align-self-center">
+                    <span>Akses Geoportal</span>
+                    <i class="bi bi-eye-fill"></i>
+                </a>
+            </div>
+        </div>      
+        <br><br>
+
+        
+        </div>
+        <div class="col-lg-5 hero-img" data-aos="zoom-out" data-aos-delay="200">
+          <!-- <img src="{% static 'assets/img/sirumahkita.png' %}" class="img-fluid" alt=""> -->
+          <h1 data-aos="fade-up">Layanan Pelaporan terkait Perumahan Rakyat</h1>
+          <h2 data-aos="fade-up" data-aos-delay="400">(Jalan Lingkungan, Drainase Lingkungan, Rumah Tidak Layak Huni) <br>Sampaikan laporan anda:</h2>
+          <div data-aos="fade-up" data-aos-delay="600" class="d-flex justify-content-end">
+            <div class="text-center text-lg-start d-flex">
+                <a href="{% url 'pelaporan' %}" class="btn-get-started scrollto d-inline-flex align-items-center justify-content-center align-self-center" aria-label="Lapor">
+                    <span>Klik Disini</span>
+                    <i class="bi bi-exclamation-circle"></i>
+                </a>
+            </div>
+          </div>   
+        </div>
+      </div>
+    </div>
+
+  </section><!-- End Hero -->
+
+  <main id="main">
+    <!-- ======= About Section ======= -->
+    <section id="about" class="about">
+
+      <div class="container" data-aos="fade-up">
+        <div class="row gx-0">
+
+          <div class="col-lg-7 d-flex flex-column justify-content-center" data-aos="fade-up" data-aos-delay="200">
+            <div class="content">
+              <h2>Apa itu Geoportal SIRUMAH KITA?</h2>
+              <p>
+                Geoportal SIRUMAH KITA merupakan layanan web-portal yang menyediakan informasi geografi tentang infrastruktur perumahan di Kota Padang. Dikelola oleh Dinas Perumahan Rakyat dan Kawasan Pemukiman, layanan ini sesuai dengan kebijakan Satu Peta dari Badan Informasi Geospasial. Tujuannya adalah memfasilitasi berbagai pihak dalam mendapatkan akses informasi geografis terkait perkembangan perumahan di kota tersebut.
+              </p>
+              <div class="text-center text-lg-start">
+                <a href="https://sirumahkita.padang.go.id/" class="btn-read-more d-inline-flex align-items-center justify-content-center align-self-center">
+                  <span>Selengkapnya</span>
+                  <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-5 d-flex align-items-center" data-aos="zoom-out" data-aos-delay="200">
+            <img src="{% static 'assets/img/didyouknows.png' %}" class="img-fluid" alt="">
+          </div>
+
+        </div>
+      </div>
+
+    </section><!-- End About Section -->
+
+    <!-- ======= Counts Section ======= -->
+    <section id="counts" class="counts">
+      <div class="container" data-aos="fade-up">
+
+        <div class="row gy-4">
+
+          <div class="col-lg-3 col-md-6">
+            <div class="count-box">
+              <i class="bi bi-database-fill"></i>
+              <div>
+                <span data-purecounter-start="0" data-purecounter-end="12" data-purecounter-duration="1" class="purecounter"></span>
+                <p><b>Dataset</b></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <div class="count-box">
+              <i class="bi bi-map-fill" style="color: #ee6c20;"></i>
+              <div>
+                <span data-purecounter-start="0" data-purecounter-end="5" data-purecounter-duration="1" class="purecounter"></span>
+                <p><b>Map</b></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <div class="count-box">
+              <i class="bi bi-speedometer" style="color: #15be56;"></i>
+              <div>
+                <span data-purecounter-start="0" data-purecounter-end="3" data-purecounter-duration="1" class="purecounter"></span>
+                <p><b>Dashboard</b></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <div class="count-box">
+              <i class="bi bi-file-earmark-text-fill" style="color: #bb0852;"></i>
+              <div>
+                <span data-purecounter-start="0" data-purecounter-end="3" data-purecounter-duration="1" class="purecounter"></span>
+                <p><b>Document</b></p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section><!-- End Counts Section -->
+
+    <!-- ======= Features Section ======= -->
+    <section id="features" class="features">
+
+      <div class="container" data-aos="fade-up">
+
+        <header class="section-header">
+          <h2>Features</h2>
+          <p>Fitur Geoportal</p>
+        </header>
+
+        <!-- Feature Icons -->
+        <div class="row feature-icons" data-aos="fade-up">
+          <div class="row">
+
+            <div class="col-xl-4 text-center" data-aos="fade-right" data-aos-delay="100">
+              <img src="{% static 'assets/img/fitur.png' %}" class="img-fluid p-4" alt="">
+            </div>
+
+            <div class="col-xl-8 d-flex content">
+              <div class="row align-self-center gy-4">
+
+                <div class="col-md-6 icon-box" data-aos="fade-up">
+                  <i class="bi bi-search"></i>
+                  <div>
+                    <h4>Search</h4>
+                    <p>Pengguna dapat mencari data geospasial yang spesifik berdasarkan kriteria tertentu</p>
+                  </div>
+                </div>
+
+                <div class="col-md-6 icon-box" data-aos="fade-up" data-aos-delay="100">
+                  <i class="bi bi-eye-fill"></i>
+                  <div>
+                    <h4>View</h4>
+                    <p>Pengguna dapat menampilkan konten pada portal dengan tampilan peta yang interaktif</p>
+                  </div>
+                </div>
+
+                <div class="col-md-6 icon-box" data-aos="fade-up" data-aos-delay="200">
+                  <i class="bi bi-download"></i>
+                  <div>
+                    <h4>Download</h4>
+                    <p>Pengguna dapat mengunduh konten, termasuk data geospasial, dari portal dan menyimpannya secara lokal untuk analisis lebih lanjut</p>
+                  </div>
+                </div>
+
+                <div class="col-md-6 icon-box" data-aos="fade-up" data-aos-delay="300">
+                  <i class="bi bi-funnel-fill"></i>
+                  <div>
+                    <h4>Filter</h4>
+                    <p>Pengguna dapat mempersempit hasil pencarian atau tampilan konten berdasarkan parameter tertentu untuk memenuhi kebutuhan analisis</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div><!-- End Feature Icons -->
+
+      </div>
+
+    </section><!-- End Features Section -->
+
+  </main><!-- End #main -->
+
+</body>
+
+{% endblock %}

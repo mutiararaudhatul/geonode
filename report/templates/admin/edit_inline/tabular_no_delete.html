@@ -1,0 +1,34 @@
+{% load i18n static %}
+
+<h3>Foto :</h3>
+
+{% for inline_admin_form in inline_admin_formset %}
+    {% for fieldset in inline_admin_form %}
+        {% for line in fieldset %}
+            {% for field in line %}
+                {% if field.is_readonly %}
+                    {{ field.contents }}
+                {% else %}
+                    {% if field.value %}
+                        <img src="{{ field.value.url }}" alt="Image">
+                    {% else %}
+                        No image
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+{% endfor %}
+
+{% if inline_admin_formset.formset.can_add_form %}
+    {% for fieldset in inline_admin_formset.empty_form %}
+        {% for line in fieldset %}
+            {% for field in line %}
+                {% if field.errors %}
+                    {{ field.errors.as_ul }}
+                {% endif %}
+                {{ field }}
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+{% endif %}
