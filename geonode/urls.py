@@ -64,7 +64,7 @@ homepage = register_url_event()(TemplateView.as_view(template_name='index.html')
 urlpatterns = [
     url(r'^$',
         homepage,
-        name='home'),    
+        name='home'),
     url(r'^help/$',
         TemplateView.as_view(template_name='help.html'),
         name='help'),
@@ -128,9 +128,6 @@ urlpatterns += [
         views.h_keywords,
         name='h_keywords_api'),
 
-    #report
-    url(r'^report/', include('geonode.report.urls')),
-
     # Social views
     url(r'^account/signup/', CustomSignupView.as_view(), name='account_signup'),
     url(r"^account/", include("allauth.urls")),
@@ -156,8 +153,6 @@ urlpatterns += [
         r'^account/moderation_sent/(?P<inactive_user>[^/]*)$',
         geonode.views.moderator_contacted,
         name='moderator_contacted'),
-
-    # url(r'^accounts/', include('django.contrib.auth.urls')),
 
     # OAuth2/OIDC Provider
     url(r'^o/',
@@ -190,7 +185,6 @@ urlpatterns += i18n_patterns(
     url(r'^grappelli/', include('grappelli.urls')),
     url(r'^admin/', admin.site.urls, name="admin"),
 )
-
 
 # Internationalization Javascript
 urlpatterns += [
