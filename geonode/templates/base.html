@@ -193,7 +193,11 @@
           <li id="nav_layers">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{% trans "Data" %}<i class="fa fa-angle-down fa-lg"></i></a>
               <ul class="dropdown-menu">
+<<<<<<< HEAD
                 <li><a href="{% dataset_list_url %}">{% trans "Datasetsss" %}</a></li>
+=======
+                <li><a href="{% dataset_list_url %}">{% trans "Datasets" %}</a></li>
+>>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e
                 <li><a href="{% document_list_url %}">{% trans "Documents" %}</a></li>
                 <li><a href="{% url "services" %}?limit={{ CLIENT_RESULTS_LIMIT }}">{% trans "Remote Services" %}</a></li>
                 {% if user.is_superuser or user.is_staff %}

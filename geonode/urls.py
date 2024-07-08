@@ -258,4 +258,8 @@ urlpatterns += [
 
 urlpatterns += [
     url(r'^geokincia/', include('geonode.geokincia.urls'), name='webhook_url'),
+<<<<<<< HEAD
 ]
+=======
+]
+>>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e

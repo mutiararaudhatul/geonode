@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 User-agent: *
 
 Disallow: /cgi-bin/
 Disallow: /api/
 Disallow: /static/
 Disallow: /uploaded/
+=======
+User-agent: *
+
+Disallow: /cgi-bin/
+Disallow: /api/
+Disallow: /static/
+Disallow: /uploaded/
+>>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e

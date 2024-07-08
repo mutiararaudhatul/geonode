@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% if choice.detail_url %}
 <span class="div" data-value="{{choice.pk}}" style="cursor:pointer;font-size:14px;" onclick="window.location.href='{{choice.detail_url}}'">
 {{ choice.title }}
@@ -7,3 +8,14 @@
 {{ choice.title }}
 </span>
 {% endif %}
+=======
+{% if choice.detail_url %}
+<span class="div" data-value="{{choice.pk}}" style="cursor:pointer;font-size:14px;" onclick="window.location.href='{{choice.detail_url}}'">
+{{ choice.title }}
+</span>
+{% else %}
+<span class="div" data-value="{{choice.pk}}" style="cursor:pointer;font-size:14px;">
+{{ choice.title }}
+</span>
+{% endif %}
+>>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e

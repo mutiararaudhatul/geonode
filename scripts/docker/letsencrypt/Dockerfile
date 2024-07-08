@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 FROM alpine:3.14
 
 RUN apk add --no-cache certbot 
@@ -16,3 +17,23 @@ ENTRYPOINT ["./docker-entrypoint.sh"]
 
 # We run cron in foreground to update the certificates
 CMD /usr/sbin/crond -f
+=======
+FROM alpine:3.14
+
+RUN apk add --no-cache certbot 
+
+# Installing scripts
+ADD docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Installing cronjobs
+ADD crontab /crontab
+RUN /usr/bin/crontab /crontab && \
+    rm /crontab
+
+# Setup the entrypoint
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+# We run cron in foreground to update the certificates
+CMD /usr/sbin/crond -f
+>>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e

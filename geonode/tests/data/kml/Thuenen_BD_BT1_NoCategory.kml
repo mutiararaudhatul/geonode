@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Placemark>
@@ -17,4 +18,25 @@
       </outerBoundaryIs>
     </Polygon>
   </Placemark>
+=======
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Placemark>
+    <name>Thuenen-BD</name>
+    <Polygon>
+      <extrude>1</extrude>
+      <altitudeMode>relativeToGround</altitudeMode>
+      <outerBoundaryIs>
+        <LinearRing>
+          <coordinates>
+		  10.442495,52.284308,100
+		  10.443053,52.284299,100
+		  10.443049,52.284166,100
+		  10.442490,52.284180,100
+          </coordinates>
+        </LinearRing>
+      </outerBoundaryIs>
+    </Polygon>
+  </Placemark>
+>>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e
 </kml>

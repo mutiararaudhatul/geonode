@@ -2255,4 +2255,8 @@ GEOKINCIA = {
             'WORKING_DIR':'/mnt/volumes/statics/workdir/gdrive',
         }        
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e

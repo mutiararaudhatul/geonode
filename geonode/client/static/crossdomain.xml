@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 <?xml version="1.0"?>
 <cross-domain-policy>
   <allow-access-from domain="*"/>
 </cross-domain-policy>
+=======
+<?xml version="1.0"?>
+<cross-domain-policy>
+  <allow-access-from domain="*"/>
+</cross-domain-policy>
+>>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e
