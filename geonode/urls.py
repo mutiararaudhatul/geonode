@@ -157,7 +157,7 @@ urlpatterns += [
         geonode.views.moderator_contacted,
         name='moderator_contacted'),
 
-    url(r'^accounts/', include('django.contrib.auth.urls')),
+    # url(r'^accounts/', include('django.contrib.auth.urls')),
 
     # OAuth2/OIDC Provider
     url(r'^o/',
