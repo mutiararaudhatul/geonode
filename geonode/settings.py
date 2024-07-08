@@ -176,7 +176,8 @@ MANAGERS = ADMINS = os.getenv('ADMINS', [])
 # although not all choices may be available on all operating systems.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = os.getenv('TIME_ZONE', "UTC")
+# TIME_ZONE = os.getenv('TIME_ZONE', "UTC")
+TIME_ZONE = 'Asia/Jakarta'
 
 SITE_ID = int(os.getenv('SITE_ID', '1'))
 
@@ -522,7 +523,17 @@ INSTALLED_APPS = (
 
     # GeoNode
     'geonode',
+
+    #pengaduan
+    'report',
+    # "admin_interface",
+    # "colorfield",
+    # 'leaflet',
 )
+
+#feature pengajuan
+X_FRAME_OPTIONS = "SAMEORIGIN"              
+SILENCED_SYSTEM_CHECKS = ["security.W019"] 
 
 markdown_white_listed_tags = [
     'a', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'ul', 'li', 'span', 'blockquote', 'strong', 'code'
@@ -2255,8 +2266,4 @@ GEOKINCIA = {
             'WORKING_DIR':'/mnt/volumes/statics/workdir/gdrive',
         }        
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 67470118999e1c6b2c287405c508a3771fa4942e
