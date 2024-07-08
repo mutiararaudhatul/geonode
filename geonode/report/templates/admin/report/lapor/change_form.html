@@ -1,0 +1,62 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    #map {
+        height: 400px;
+        margin-bottom: 20px;
+    }
+    .inline-related {
+        margin-bottom: 20px;
+    }
+    .inline-related h2 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+    .foto-container {
+        margin-top: 20px;
+    }
+    .foto-container img {
+        max-width: 100px;
+        max-height: 100px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block after_field_sets %}
+{{ block.super }}
+<div id="map"></div>
+<div class="foto-container">
+    {% for foto in inline_admin_formset %}
+        {{ foto.display_image }}
+    {% endfor %}
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var lat = {{ leaflet_lat|floatformat:"9" }};
+        var lng = {{ leaflet_lng|floatformat:"9"}};
+        var address = "{{ leaflet_address|escapejs }}";
+        var map = L.map('map').setView([lat, lng], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var googleMapsLink = 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng;
+
+        L.marker([lat, lng]).addTo(map)
+            .bindPopup('<b>Location:</b> ' + address + '<br><b>Coordinates:</b> ' + lat + ', ' + lng + '<br><a href="' + googleMapsLink + '" target="_blank">Open in Google Maps</a>')
+            .openPopup();
+    });
+</script>
+{% endblock %}
