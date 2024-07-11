@@ -51,12 +51,3 @@ def handle_form_lapor(request):
         return redirect('pelaporan')
 
     return render(request, 'pelaporan.html')
-
-def laporan_list(request):
-    lapors = Lapor.objects.all() 
-    return render(request, 'laporan_list.html', {'lapors': lapors})
-
-
-def laporan_detail(request, id):
-    laporan = get_object_or_404(Lapor, id=id)
-    return render(request, 'laporan_detail.html', {'laporan': laporan})
